@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Porra del Mundial 2026 — Inicia sesión o regístrate para participar" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Porra Mundial 2026 — Acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* ---- Login page specific styles ---- */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(79,142,247,0.12) 0%, transparent 60%),
+        var(--clr-bg-0);
+    }
+    .login-hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-hero__emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+    .login-hero__title {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--clr-gold), var(--clr-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .login-hero__sub { color: var(--clr-text-muted); font-size: 0.95rem; }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--clr-border);
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--clr-text-muted);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .auth-tab.active {
+      color: var(--clr-accent);
+      background: rgba(233,69,96,0.08);
+    }
+    .auth-form-panel { padding: 28px 24px; }
+
+    .login-footer {
+      margin-top: 24px;
+      font-size: 0.78rem;
+      color: var(--clr-text-muted);
+      text-align: center;
+    }
+    .login-footer a { color: var(--clr-blue); }
+
+    .features-row {
+      display: flex;
+      gap: 20px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .feature-chip {
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      color: var(--clr-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .divider-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: var(--clr-text-muted);
+      font-size: 0.8rem;
+    }
+    .divider-text::before, .divider-text::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--clr-border);
+    }
+  </style>
+</head>
+<body data-page="login">
+  <main class="login-page">
+    <!-- Hero -->
+    <div class="login-hero">
+      <span class="login-hero__emoji">⚽</span>
+      <h1 class="login-hero__title">Porra Mundial 2026</h1>
+      <p class="login-hero__sub">Predice, compite y sube en el ranking</p>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="auth-card" role="region" aria-label="Formulario de acceso">
+      <!-- Tabs -->
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" data-tab="login"    role="tab" aria-selected="true"  aria-controls="panel-login">Iniciar sesión</button>
+        <button class="auth-tab"        data-tab="register" role="tab" aria-selected="false" aria-controls="panel-register">Registrarse</button>
+        <button class="auth-tab"        data-tab="forgot"   role="tab" aria-selected="false" aria-controls="panel-forgot">¿Olvidaste?</button>
+      </div>
+
+      <!-- ======== LOGIN PANEL ======== -->
+      <div id="panel-login" class="auth-form-panel" role="tabpanel">
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" name="email"
+              placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" name="password"
+              placeholder="••••••••" autocomplete="current-password" required />
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%">
+            ⚡ Entrar
+          </button>
+        </form>
+      </div>
+
+      <!-- ======== REGISTER PANEL ======== -->
+      <div id="panel-register" class="auth-form-panel hidden" role="tabpanel">
+        <form id="register-form" novalidate>
+          <div class="form-group">
+            <label for="reg-username">Nombre de usuario <span title="Público" style="color:var(--clr-text-muted)">*</span></label>
+            <input type="text" id="reg-username" name="username"
+              placeholder="pablito_futbol" minlength="3" maxlength="30" required
+              autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Correo electrónico</label>
+            <input type="email" id="reg-email" name="email"
+              placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-phone">Teléfono <span style="color:var(--clr-text-muted);font-weight:400">(opcional)</span></label>
+            <input type="tel" id="reg-phone" name="phone"
+              placeholder="+34 600 000 000" autocomplete="tel" />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Contraseña <span style="color:var(--clr-text-muted);font-size:0.75rem">(mín. 6 caracteres)</span></label>
+            <input type="password" id="reg-password" name="password"
+              placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-confirm">Confirmar contraseña</label>
+            <input type="password" id="reg-confirm" name="confirm_password"
+              placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%">
+            🚀 Crear cuenta
+          </button>
+        </form>
+        <p style="font-size:0.75rem;color:var(--clr-text-muted);margin-top:12px">
+          Al registrarte aceptas las reglas del juego. Tus predicciones son privadas hasta que cierre el plazo.
+        </p>
+      </div>
+
+      <!-- ======== FORGOT PANEL ======== -->
+      <div id="panel-forgot" class="auth-form-panel hidden" role="tabpanel">
+        <p style="font-size:0.88rem;color:var(--clr-text-muted);margin-bottom:16px">
+          Te enviaremos un email para restablecer tu contraseña.
+        </p>
+        <form id="forgot-form" novalidate>
+          <div class="form-group">
+            <label for="forgot-email">Correo electrónico</label>
+            <input type="email" id="forgot-email" name="email"
+              placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <button type="submit" class="btn btn--outline" style="width:100%">
+            📧 Enviar enlace de recuperación
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Features row -->
+    <div class="features-row" aria-label="Características">
+      <div class="feature-chip">⚽ 102 partidos</div>
+      <div class="feature-chip">🏆 Sistema de puntos</div>
+      <div class="feature-chip">📊 Estadísticas</div>
+      <div class="feature-chip">🏅 Logros</div>
+    </div>
+
+    <footer class="login-footer">
+      <p>Porra Mundial 2026 &copy; 2026 — Para uso privado · Tecnología: <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a></p>
+    </footer>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

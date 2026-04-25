@@ -1,0 +1,205 @@
+/* =============================================================
+   admin.css — Admin panel specific styles
+   ============================================================= */
+
+/* ---- Admin Layout ---------------------------------------- */
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.admin-main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ---- Admin Header Badge ---------------------------------- */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--clr-gold);
+  color: #000;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ---- Admin Tabs ------------------------------------------ */
+.admin-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  background: var(--clr-bg-1);
+  border-bottom: 1px solid var(--clr-border);
+  padding: 0 16px;
+  scrollbar-width: none;
+  margin-bottom: 24px;
+}
+.admin-tabs::-webkit-scrollbar { display: none; }
+.admin-tab {
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--clr-text-muted);
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.admin-tab:hover { color: var(--clr-text); }
+.admin-tab.active {
+  color: var(--clr-gold);
+  border-bottom-color: var(--clr-gold);
+}
+
+/* ---- Admin Panel ----------------------------------------- */
+.admin-panel { animation: fadeIn 0.25s ease; }
+
+/* ---- Admin Tables ---------------------------------------- */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-bottom: 24px;
+}
+.admin-table th {
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--clr-bg-2);
+  color: var(--clr-text-muted);
+  border-bottom: 2px solid var(--clr-border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  vertical-align: middle;
+}
+.admin-table tr:hover td { background: var(--clr-bg-2); }
+.admin-table--compact .admin-table th,
+.admin-table--compact .admin-table td { padding: 7px 10px; }
+
+/* ---- Admin Match Rows ------------------------------------ */
+.admin-match-row {
+  padding: 14px 16px;
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.admin-match-row--done { border-color: var(--clr-green); }
+.admin-match-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+}
+.admin-result-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-score {
+  width: 56px !important;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.admin-score--sm { width: 44px !important; }
+.team-label {
+  font-weight: 600;
+  font-size: 0.88rem;
+  min-width: 80px;
+  white-space: nowrap;
+}
+.sep {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--clr-text-muted);
+  padding: 0 4px;
+}
+.extra-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+  background: var(--clr-bg-2);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--clr-border);
+  width: 100%;
+}
+.extra-fields label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+/* ---- Admin Round Details (collapsible) ------------------- */
+.admin-round-details {
+  margin-bottom: 24px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.admin-round-summary {
+  padding: 14px 16px;
+  font-weight: 700;
+  background: var(--clr-bg-2);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--clr-gold);
+}
+.admin-round-summary::-webkit-details-marker { display: none; }
+.admin-round-summary::before { content: '▶'; font-size: 0.7rem; transition: transform 0.2s; }
+details[open] .admin-round-summary::before { transform: rotate(90deg); }
+.admin-matches-list { padding: 16px; }
+
+/* ---- Admin Form ------------------------------------------ */
+.admin-form {
+  max-width: 640px;
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+.admin-form h3 { margin-bottom: 16px; }
+
+/* ---- Log JSON -------------------------------------------- */
+.log-json {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  background: var(--clr-bg-0);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  max-height: 200px;
+  color: var(--clr-text-muted);
+  margin-top: 8px;
+}
+
+/* ---- Role Select ----------------------------------------- */
+.role-select { width: auto; min-width: 120px; }
+
+/* ---- Responsive ------------------------------------------ */
+@media (max-width: 640px) {
+  .admin-result-form { flex-direction: column; align-items: flex-start; }
+  .admin-table th:nth-child(n+5),
+  .admin-table td:nth-child(n+5) { display: none; }
+}
