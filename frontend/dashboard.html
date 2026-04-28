@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7/css/flag-icons.min.css" />
   <!-- Chart.js UMD — available as window.Chart -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
 </head>
@@ -23,8 +24,10 @@
       <a id="admin-link" class="btn btn--xs btn--gold hidden" href="admin.html">👑 Admin</a>
     </div>
     <div class="app-header__user">
-      <div class="avatar" id="user-avatar" aria-label="Avatar"></div>
-      <span id="user-name" class="user-name" aria-label="Nombre de usuario"></span>
+      <button class="user-profile-btn" id="user-profile-btn" aria-label="Mi perfil">
+        <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="user-name" class="user-name"></span>
+      </button>
       <button id="logout-btn" class="btn btn--xs btn--outline" aria-label="Cerrar sesión">Salir</button>
     </div>
   </header>
@@ -48,9 +51,8 @@
       📊 Estadísticas
     </button>
     <button class="dash-tab" role="tab" data-tab="perfil"
-      aria-selected="false" aria-controls="panel-perfil">
-      👤 Mi perfil
-    </button>
+      aria-selected="false" aria-controls="panel-perfil"
+      hidden></button>
   </nav>
 
   <!-- ===== MAIN CONTENT ===== -->

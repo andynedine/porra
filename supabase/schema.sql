@@ -14,7 +14,7 @@ CREATE TABLE public.profiles (
   id          UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username    TEXT        UNIQUE NOT NULL,
   email       TEXT        NOT NULL,
-  phone       TEXT,
+  phone       TEXT        NOT NULL DEFAULT '',
   role        TEXT        NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'SUPERADMIN')),
   avatar_url  TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -153,7 +153,8 @@ CREATE TABLE public.tournament_predictions (
   id                   SERIAL      PRIMARY KEY,
   user_id              UUID        NOT NULL UNIQUE REFERENCES public.profiles(id) ON DELETE CASCADE,
   champion_team_id     INTEGER     REFERENCES public.teams(id),
-  runner_up_team_id    INTEGER     REFERENCES public.teams(id),
+  runner_up_team_id    INTEGER     REFERENCES public.teams(id),   -- Finalista A
+  finalist_2_team_id   INTEGER     REFERENCES public.teams(id),   -- Finalista B
   top_scorer_name      TEXT,
   top_scorer_team_id   INTEGER     REFERENCES public.teams(id),
   champion_points      DECIMAL(5,2) DEFAULT 0,

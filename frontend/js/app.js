@@ -8,7 +8,7 @@ import { showToast, requireAuth, redirectIfAuth, escapeHtml, initials } from './
 import { initPredictions } from './predictions.js';
 import { initRanking, initStats } from './ranking.js';
 import { getMatches, getStandings, getGroups, subscribeToMatchResults } from './api.js';
-import { formatDate, roundLabel, groupBy, fmtPts } from './utils.js';
+import { formatDate, roundLabel, groupBy, fmtPts, flagImg } from './utils.js';
 
 const PAGE = document.body.dataset.page; // set via data-page attribute on <body>
 
@@ -51,8 +51,9 @@ function initLoginPage(session) {
   bindRegisterForm('register-form', () => window.location.replace('dashboard.html'));
   bindForgotForm('forgot-form');
 
-  // Listen for auth changes (e.g., email confirmation in same tab)
-  onAuthChange(s => { if (s) window.location.replace('dashboard.html'); });
+  onAuthChange((s) => {
+    if (s) window.location.replace('dashboard.html');
+  });
 }
 
 // ============================================================
@@ -90,6 +91,12 @@ async function initDashboardPage(session) {
     tab.addEventListener('click', () => activateDashTab(tab, tabs));
   });
 
+  // User icon / name → open profile panel
+  document.getElementById('user-profile-btn')?.addEventListener('click', () => {
+    const perfilTab = document.querySelector('.dash-tab[data-tab="perfil"]');
+    if (perfilTab) activateDashTab(perfilTab, tabs);
+  });
+
   // Default tab
   const defaultTab = document.querySelector('.dash-tab[data-tab="partidos"]');
   if (defaultTab) activateDashTab(defaultTab, tabs);
@@ -114,14 +121,8 @@ function activateDashTab(selectedTab, tabHandlers) {
 }
 
 function setUserHeader(profile) {
-  const avatarEl = document.getElementById('user-avatar');
-  const nameEl   = document.getElementById('user-name');
-  if (nameEl)   nameEl.textContent = escapeHtml(profile.username);
-  if (avatarEl) {
-    avatarEl.innerHTML = profile.avatar_url
-      ? `<img src="${escapeHtml(profile.avatar_url)}" alt="${escapeHtml(profile.username)}">`
-      : `<span>${initials(profile.username)}</span>`;
-  }
+  const nameEl = document.getElementById('user-name');
+  if (nameEl) nameEl.textContent = profile.username;
 }
 
 // ---- Matches Overview Tab ----------------------------------
@@ -169,17 +170,19 @@ async function initMatchesTab(user) {
 
 function buildMatchRow(m) {
   const res = m.match_results?.[0] ?? null;
-  const homeTeam = m.home_team ? `${m.home_team.flag} ${m.home_team.name}` : 'TBD';
-  const awayTeam = m.away_team ? `${m.away_team.flag} ${m.away_team.name}` : 'TBD';
+  const homeFlag = m.home_team ? flagImg(m.home_team) : '';
+  const awayFlag = m.away_team ? flagImg(m.away_team) : '';
+  const homeName = m.home_team ? escapeHtml(m.home_team.name) : 'TBD';
+  const awayName = m.away_team ? escapeHtml(m.away_team.name) : 'TBD';
   const score = res ? `${res.home_score} – ${res.away_score}${res.penalties ? ' (pen)' : ''}` : 'vs';
   const statusClass = m.status === 'finished' ? 'match-row--done' : m.status === 'live' ? 'match-row--live' : '';
 
   return `
     <div class="match-row ${statusClass}">
       <span class="match-row__date">${formatDate(m.match_datetime)}</span>
-      <span class="match-row__home">${escapeHtml(homeTeam)}</span>
+      <span class="match-row__home">${homeFlag} ${homeName}</span>
       <span class="match-row__score">${escapeHtml(score)}</span>
-      <span class="match-row__away">${escapeHtml(awayTeam)}</span>
+      <span class="match-row__away">${awayName} ${awayFlag}</span>
       ${m.status === 'live' ? '<span class="live-badge">EN VIVO</span>' : ''}
     </div>`;
 }
@@ -235,7 +238,7 @@ async function initProfileTab(profile, user) {
         phone:    fd.get('phone').trim(),
       });
       showToast('✅ Perfil actualizado', 'success');
-      setUserHeader({ username: fd.get('username').trim(), avatar_url: profile.avatar_url });
+      setUserHeader({ username: fd.get('username').trim() });
     } catch (err) {
       showToast(err.message, 'error');
     } finally {

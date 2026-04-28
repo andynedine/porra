@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&JetBrains+Mono:wght@400&display=swap" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7/css/flag-icons.min.css" />
 </head>
 <body data-page="admin" class="admin-layout">
 
@@ -19,8 +20,10 @@
     <span class="admin-badge">👑 SUPERADMIN</span>
     <div class="app-header__spacer"></div>
     <div class="app-header__user">
-      <div class="avatar" id="user-avatar" aria-label="Avatar"></div>
-      <span id="user-name" class="user-name"></span>
+      <button class="user-profile-btn user-profile-btn--static" aria-label="Usuario">
+        <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="user-name" class="user-name"></span>
+      </button>
       <a href="dashboard.html" class="btn btn--xs btn--outline">← Dashboard</a>
       <button id="logout-btn" class="btn btn--xs btn--outline">Salir</button>
     </div>

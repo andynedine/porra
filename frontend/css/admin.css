@@ -199,7 +199,25 @@ details[open] .admin-round-summary::before { transform: rotate(90deg); }
 
 /* ---- Responsive ------------------------------------------ */
 @media (max-width: 640px) {
+  .admin-main { padding: 16px 10px 64px; }
+
+  /* Admin tabs smaller */
+  .admin-tabs { padding: 0 8px; gap: 0; }
+  .admin-tab { padding: 10px 10px; font-size: 0.76rem; }
+
+  /* Result form stack */
   .admin-result-form { flex-direction: column; align-items: flex-start; }
+
+  /* Hide extra table columns */
   .admin-table th:nth-child(n+5),
   .admin-table td:nth-child(n+5) { display: none; }
+
+  /* Admin form full width */
+  .admin-form { padding: 16px; }
+
+  /* Match info wrap */
+  .admin-match-info { flex-wrap: wrap; gap: 6px; }
+
+  /* Extra fields stack */
+  .extra-fields { flex-direction: column; align-items: flex-start; gap: 6px; }
 }

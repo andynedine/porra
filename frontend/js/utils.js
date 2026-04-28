@@ -4,6 +4,32 @@
 
 import { ROUNDS, SCORING } from './config.js';
 
+// ---- Flag icons (flag-icons library, CDN in HTML) ----------
+const FLAG_CODE_MAP = {
+  USA:'us', MAR:'ma', POL:'pl', CIV:'ci',
+  MEX:'mx', GER:'de', JPN:'jp', ECU:'ec',
+  CAN:'ca', FRA:'fr', VEN:'ve', SEN:'sn',
+  BRA:'br', ENG:'gb-eng', NED:'nl', RSA:'za',
+  ARG:'ar', ESP:'es', ALG:'dz', AUS:'au',
+  COL:'co', POR:'pt', KOR:'kr', GHA:'gh',
+  URU:'uy', BEL:'be', IRN:'ir', SRB:'rs',
+  CHI:'cl', ITA:'it', KSA:'sa', JAM:'jm',
+  CRO:'hr', DEN:'dk', EGY:'eg', CMR:'cm',
+  SUI:'ch', TUR:'tr', NGA:'ng', HON:'hn',
+  AUT:'at', SCO:'gb-sct', QAT:'qa', NZL:'nz',
+  PAR:'py', UAE:'ae', UZB:'uz', PAN:'pa',
+};
+
+/**
+ * Returns an <img>-based flag for a team object { code, name }.
+ * Falls back to a neutral icon if the code is unknown.
+ */
+export function flagImg(team) {
+  if (!team?.code) return '<span class="fi fi-xx fis team-flag" title="?"></span>';
+  const iso = FLAG_CODE_MAP[team.code.toUpperCase()] ?? team.code.toLowerCase().slice(0, 2);
+  return `<span class="fi fi-${iso} fis team-flag" title="${escapeHtml(team.name ?? '')}"></span>`;
+}
+
 /** Format a date string or Date object for display (Spanish locale) */
 export function formatDate(dt, opts = {}) {
   if (!dt) return '—';

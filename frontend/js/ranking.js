@@ -3,7 +3,7 @@
 // =============================================================
 import {
   getGlobalRanking, getRoundRanking, getMyScore,
-  getMyAchievements, getAllAchievements, subscribeToScores,
+  getMyAchievements, getAllAchievements, subscribeToScores, unsubscribeFromScores,
 } from './api.js';
 import { escapeHtml, fmtPts, initials, roundLabel } from './utils.js';
 import { ROUNDS } from './config.js';
@@ -23,11 +23,15 @@ export async function initRanking(user) {
 
   try {
     await renderRanking(el);
-    // Subscribe to realtime score updates
+    // Subscribe to realtime score updates (removes any previous channel first)
     subscribeToScores(() => renderRanking(el));
   } catch (err) {
     el.innerHTML = `<div class="error">Error al cargar ranking: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+export function cleanupRanking() {
+  unsubscribeFromScores();
 }
 
 async function renderRanking(container) {

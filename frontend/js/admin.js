@@ -11,7 +11,7 @@ import {
   getStandings,
 } from './api.js';
 import {
-  formatDate, escapeHtml, showToast, roundLabel, deadlinePassed, groupBy,
+  formatDate, escapeHtml, showToast, roundLabel, deadlinePassed, groupBy, flagImg,
 } from './utils.js';
 import { ROUNDS } from './config.js';
 
@@ -86,8 +86,8 @@ async function renderAdminResultsTab() {
         const res = m.match_results?.[0] ?? null;
         const homeTeam = m.home_team?.name ?? 'TBD';
         const awayTeam = m.away_team?.name ?? 'TBD';
-        const homeFlag = m.home_team?.flag ?? '🏳️';
-        const awayFlag = m.away_team?.flag ?? '🏳️';
+        const homeFlag = flagImg(m.home_team);
+        const awayFlag = flagImg(m.away_team);
 
         html += `
           <div class="admin-match-row ${res ? 'admin-match-row--done' : ''}" id="admin-match-${m.id}">
@@ -96,7 +96,7 @@ async function renderAdminResultsTab() {
               ${m.group ? `<span class="match-group">Grupo ${escapeHtml(m.group.letter)}</span>` : ''}
             </div>
             <form class="admin-result-form" data-match="${m.id}" data-round="${escapeHtml(round)}">
-              <span class="team-label">${escapeHtml(homeFlag)} ${escapeHtml(homeTeam)}</span>
+              <span class="team-label">${homeFlag} ${escapeHtml(homeTeam)}</span>
               <input type="number" name="home_score" min="0" max="99" class="score-input admin-score"
                 value="${res ? res.home_score : ''}" placeholder="–" required>
               <span class="sep">–</span>
@@ -197,8 +197,8 @@ async function renderAdminMatchesTab() {
         <tbody>`;
 
     for (const m of matches) {
-      const homeTeam = m.home_team ? `${m.home_team.flag} ${m.home_team.name}` : 'TBD';
-      const awayTeam = m.away_team ? `${m.away_team.flag} ${m.away_team.name}` : 'TBD';
+      const homeTeam = m.home_team ? `${flagImg(m.home_team)} ${escapeHtml(m.home_team.name)}` : 'TBD';
+      const awayTeam = m.away_team ? `${flagImg(m.away_team)} ${escapeHtml(m.away_team.name)}` : 'TBD';
       html += `
         <tr>
           <td>${m.id}</td>

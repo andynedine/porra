@@ -157,7 +157,7 @@ export async function upsertGroupPositionPrediction(userId, groupId, positions) 
 export async function getTournamentPrediction(userId) {
   const { data, error } = await supabase
     .from('tournament_predictions')
-    .select('*, champion_team:champion_team_id(name,flag), runner_up_team:runner_up_team_id(name,flag)')
+    .select('*, champion_team:champion_team_id(name,flag), finalist_1_team:runner_up_team_id(name,flag), finalist_2_team:finalist_2_team_id(name,flag)')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -170,7 +170,8 @@ export async function upsertTournamentPrediction(userId, pred) {
     .upsert({
       user_id:              userId,
       champion_team_id:     pred.champion_team_id ?? null,
-      runner_up_team_id:    pred.runner_up_team_id ?? null,
+      runner_up_team_id:    pred.finalist_1_team_id ?? null,
+      finalist_2_team_id:   pred.finalist_2_team_id ?? null,
       top_scorer_name:      pred.top_scorer_name?.trim() ?? null,
       top_scorer_team_id:   pred.top_scorer_team_id ?? null,
       updated_at:           new Date().toISOString(),
@@ -344,11 +345,23 @@ export async function getTournamentResult() {
 }
 
 // ---- Realtime subscription ---------------------------------
+let _scoresChannel = null;
 export function subscribeToScores(callback) {
-  return supabase
+  if (_scoresChannel) {
+    supabase.removeChannel(_scoresChannel);
+    _scoresChannel = null;
+  }
+  _scoresChannel = supabase
     .channel('scores-realtime')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, callback)
     .subscribe();
+  return _scoresChannel;
+}
+export function unsubscribeFromScores() {
+  if (_scoresChannel) {
+    supabase.removeChannel(_scoresChannel);
+    _scoresChannel = null;
+  }
 }
 
 export function subscribeToMatchResults(callback) {

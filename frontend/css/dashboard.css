@@ -86,6 +86,35 @@
 }
 
 /* ---- Responsive ------------------------------------------ */
-@media (max-width: 480px) {
-  .dash-tab { padding: 12px 12px; font-size: 0.8rem; }
+@media (max-width: 600px) {
+  .dashboard-main { padding: 16px 10px 64px; }
+
+  /* Nav tabs: grid 3+2 so all tabs are visible without scrolling */
+  .dash-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow-x: visible;
+    padding: 0;
+    gap: 0;
+  }
+  .dash-tab {
+    padding: 10px 4px;
+    font-size: 0.7rem;
+    text-align: center;
+    white-space: normal;
+    border-bottom: 2px solid transparent;
+    border-right: 1px solid var(--clr-border);
+  }
+  .dash-tab:last-child { border-right: none; }
+
+  /* Profile form full width */
+  .profile-form { padding: 16px; }
+
+  /* Ranking header */
+  .ranking-header { flex-direction: column; align-items: stretch; }
+  .round-filter { flex-wrap: wrap; }
+  .round-filter select { flex: 1; }
+
+  /* Group section */
+  .group-section { padding: 12px; }
 }

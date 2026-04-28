@@ -9,7 +9,7 @@ import {
 } from './api.js';
 import {
   formatDate, deadlinePassed, roundLabel, scoringTooltip,
-  previewPoints, showToast, escapeHtml, fmtPts, resultClass, groupBy,
+  previewPoints, showToast, escapeHtml, fmtPts, resultClass, groupBy, flagImg,
 } from './utils.js';
 import { ROUNDS } from './config.js';
 
@@ -74,20 +74,16 @@ async function renderPredictionsUI(container) {
       </div>`;
     }
 
-    contentHtml += `<div class="matches-grid">`;
-
-    for (const m of roundMatches) {
+    function buildCard(m) {
       const pred = predMap[m.id] ?? { home_score: -1, away_score: -1, points: 0, is_exact: false, is_partial: false, calculated_at: null };
       const result = m.match_results?.[0] ?? null;
       const pts = result
         ? previewPoints(m.round, pred.home_score, pred.away_score, result.home_score, result.away_score)
         : null;
       const rCls = resultClass(pred.is_exact, pred.is_partial, pred.calculated_at);
-
       const homeDisplay = pred.home_score >= 0 ? pred.home_score : '';
       const awayDisplay = pred.away_score >= 0 ? pred.away_score : '';
-
-      contentHtml += `
+      return `
         <div class="match-card ${rCls}" data-match-id="${m.id}">
           <div class="match-card__header">
             <span class="match-datetime">${formatDate(m.match_datetime)}</span>
@@ -95,7 +91,7 @@ async function renderPredictionsUI(container) {
           </div>
           <div class="match-card__teams">
             <div class="team team--home">
-              <span class="team__flag">${m.home_team ? escapeHtml(m.home_team.flag) : '🏳️'}</span>
+              <span class="team__flag">${flagImg(m.home_team)}</span>
               <span class="team__name">${m.home_team ? escapeHtml(m.home_team.name) : 'Por confirmar'}</span>
             </div>
             <div class="prediction-inputs ${closed ? 'prediction-inputs--locked' : ''}">
@@ -115,7 +111,7 @@ async function renderPredictionsUI(container) {
             </div>
             <div class="team team--away">
               <span class="team__name">${m.away_team ? escapeHtml(m.away_team.name) : 'Por confirmar'}</span>
-              <span class="team__flag">${m.away_team ? escapeHtml(m.away_team.flag) : '🏳️'}</span>
+              <span class="team__flag">${flagImg(m.away_team)}</span>
             </div>
           </div>
           ${result ? `
@@ -128,7 +124,29 @@ async function renderPredictionsUI(container) {
         </div>`;
     }
 
-    contentHtml += '</div>'; // matches-grid
+    if (round === 'group') {
+      // Render separated by group with a heading divider
+      const byGroup = groupBy(roundMatches, 'group_id');
+      // Sort group keys by the first match's group letter
+      const sortedGroupIds = Object.keys(byGroup).sort((a, b) => {
+        const la = byGroup[a][0]?.group?.letter ?? '';
+        const lb = byGroup[b][0]?.group?.letter ?? '';
+        return la.localeCompare(lb);
+      });
+      for (const gId of sortedGroupIds) {
+        const gMatches = byGroup[gId];
+        const letter = gMatches[0]?.group?.letter ?? gId;
+        contentHtml += `<div class="group-block">
+          <h4 class="group-block__title">Grupo ${escapeHtml(letter)}</h4>
+          <div class="matches-grid">`;
+        for (const m of gMatches) contentHtml += buildCard(m);
+        contentHtml += `</div></div>`;
+      }
+    } else {
+      contentHtml += `<div class="matches-grid">`;
+      for (const m of roundMatches) contentHtml += buildCard(m);
+      contentHtml += '</div>';
+    }
 
     // Save button for open rounds
     const closed2 = deadlinePassed(_deadlines[round]?.deadline_at);
@@ -150,7 +168,7 @@ async function renderPredictionsUI(container) {
   // Tournament predictions section
   const tournamentHtml = await buildTournamentPredSection(teams);
 
-  container.innerHTML = tabsHtml + contentHtml + tournamentHtml;
+  container.innerHTML = tournamentHtml + tabsHtml + contentHtml;
 
   // Activate first tab
   const firstTab = container.querySelector('.round-tab');
@@ -262,34 +280,51 @@ async function buildTournamentPredSection(teams) {
   const closed = deadlinePassed(dl?.deadline_at);
   const existing = await getTournamentPrediction(_currentUser.id).catch(() => null);
 
-  const teamOptions = teams
-    .map(t => `<option value="${t.id}" ${existing?.champion_team_id === t.id ? 'selected' : ''}>${escapeHtml(t.flag)} ${escapeHtml(t.name)}</option>`)
-    .join('');
-
-  const runnerUpOptions = teams
-    .map(t => `<option value="${t.id}" ${existing?.runner_up_team_id === t.id ? 'selected' : ''}>${escapeHtml(t.flag)} ${escapeHtml(t.name)}</option>`)
-    .join('');
+  // Build custom flag-select HTML for a list of teams
+  function buildFlagSelect(name, teamsList, selectedId) {
+    const selected = teamsList.find(t => t.id === selectedId);
+    const display = selected
+      ? `${flagImg(selected)} ${escapeHtml(selected.name)}`
+      : '— Seleccionar —';
+    const options = teamsList.map(t =>
+      `<div class="flag-option" data-value="${t.id}" role="option">
+        ${flagImg(t)} ${escapeHtml(t.name)}
+      </div>`
+    ).join('');
+    return `
+      <div class="flag-select ${closed ? 'flag-select--disabled' : ''}" data-name="${escapeHtml(name)}">
+        <input type="hidden" name="${escapeHtml(name)}" value="${selectedId ?? ''}">
+        <button type="button" class="flag-select__trigger" ${closed ? 'disabled' : ''} aria-haspopup="listbox">
+          <span class="flag-select__value">${display}</span>
+          <span class="flag-select__arrow">▾</span>
+        </button>
+        <div class="flag-select__dropdown" role="listbox" hidden>
+          <div class="flag-option flag-option--empty" data-value="" role="option">— Seleccionar —</div>
+          ${options}
+        </div>
+      </div>`;
+  }
 
   return `
     <section class="tournament-preds" id="tournament-preds">
-      <h2 class="section-title">🏆 Predicciones del Torneo</h2>
+      <div class="tournament-preds__header">
+        <h2 class="section-title">🏆 Predicciones del Torneo</h2>
+        ${!closed ? `<button type="submit" form="tournament-form" class="btn btn--gold btn--sm">💾 Guardar</button>` : ''}
+      </div>
       ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
         ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
       </div>` : ''}
       <form id="tournament-form" class="tournament-form ${closed ? 'form--locked' : ''}">
         <div class="form-group">
           <label>🥇 Campeón (+10 pts)</label>
-          <select name="champion_team_id" ${closed ? 'disabled' : ''} required>
-            <option value="">— Seleccionar —</option>
-            ${teamOptions}
-          </select>
+          ${buildFlagSelect('champion_team_id', teams, existing?.champion_team_id)}
         </div>
-        <div class="form-group">
-          <label>🥈 Subcampeón (+3 pts finalista)</label>
-          <select name="runner_up_team_id" ${closed ? 'disabled' : ''} required>
-            <option value="">— Seleccionar —</option>
-            ${runnerUpOptions}
-          </select>
+        <div class="form-group form-group--finalists">
+          <label>🏅 Finalistas — los 2 equipos que jugarán la final (+3 pts por finalista)</label>
+          <div class="finalists-row">
+            ${buildFlagSelect('finalist_1_team_id', teams, existing?.runner_up_team_id)}
+            ${buildFlagSelect('finalist_2_team_id', teams, existing?.finalist_2_team_id)}
+          </div>
         </div>
         <div class="form-group">
           <label>⚽ Máximo Goleador (+10 pts)</label>
@@ -299,14 +334,46 @@ async function buildTournamentPredSection(teams) {
             maxlength="100"
             ${closed ? 'disabled' : ''}>
         </div>
-        ${!closed ? `<button type="submit" class="btn btn--gold">💾 Guardar predicciones del torneo</button>` : ''}
       </form>
-    </section>`;
+    </section>
+    <div class="phases-divider">
+      <span class="phases-divider__label">Predicciones por fase</span>
+    </div>`;
 }
 
 function bindTournamentForm(container) {
   const form = container.querySelector('#tournament-form');
   if (!form) return;
+
+  // Wire custom flag-selects
+  container.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
+    const trigger = sel.querySelector('.flag-select__trigger');
+    const dropdown = sel.querySelector('.flag-select__dropdown');
+    const hidden = sel.querySelector('input[type="hidden"]');
+    const valueSpan = sel.querySelector('.flag-select__value');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      // Close all other dropdowns
+      document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+      dropdown.hidden = isOpen;
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const opt = e.target.closest('.flag-option');
+      if (!opt) return;
+      hidden.value = opt.dataset.value;
+      valueSpan.innerHTML = opt.innerHTML;
+      dropdown.hidden = true;
+    });
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = form.querySelector('[type="submit"]');
@@ -314,9 +381,10 @@ function bindTournamentForm(container) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
     try {
       await upsertTournamentPrediction(_currentUser.id, {
-        champion_team_id:  parseInt(fd.get('champion_team_id')) || null,
-        runner_up_team_id: parseInt(fd.get('runner_up_team_id')) || null,
-        top_scorer_name:   fd.get('top_scorer_name'),
+        champion_team_id:    parseInt(fd.get('champion_team_id'))    || null,
+        finalist_1_team_id:  parseInt(fd.get('finalist_1_team_id')) || null,
+        finalist_2_team_id:  parseInt(fd.get('finalist_2_team_id')) || null,
+        top_scorer_name:     fd.get('top_scorer_name'),
       });
       showToast('✅ Predicciones del torneo guardadas', 'success');
     } catch (err) {

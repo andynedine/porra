@@ -14,7 +14,7 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'username', SPLIT_PART(NEW.email, '@', 1)),
-    NEW.raw_user_meta_data->>'phone',
+    COALESCE(NEW.raw_user_meta_data->>'phone', ''),
     'USER'
   )
   ON CONFLICT (id) DO NOTHING;
@@ -25,6 +25,22 @@ $$;
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- =============================================================
+-- 1b. CHECK EMAIL EXISTS (callable by anon for password reset)
+-- =============================================================
+CREATE OR REPLACE FUNCTION public.check_email_exists(email_input TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE lower(email) = lower(email_input)
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.check_email_exists(TEXT) TO anon, authenticated;
 
 -- =============================================================
 -- 2. UPDATE profiles.updated_at ON CHANGE
@@ -352,7 +368,7 @@ $$;
 
 -- =============================================================
 -- 8. TOURNAMENT BONUS POINTS CALCULATION
--- Champion: +10, Runner-up: +3 each finalist, Top scorer: +10
+-- Champion: +10, Finalists (A+B reach the final): +3 each, Top scorer: +10
 -- =============================================================
 CREATE OR REPLACE FUNCTION public.calculate_tournament_bonus_points(p_user_id UUID)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -375,22 +391,20 @@ BEGIN
     v_champion_pts := 10.0;
   END IF;
 
-  -- Runner-up (+3)
-  IF v_pred.runner_up_team_id = v_result.runner_up_team_id THEN
-    v_runner_up_pts := 3.0;
-  END IF;
+  -- runner_up_points no longer used (kept as 0 for backward compat)
+  v_runner_up_pts := 0;
 
-  -- Both finalists correctly predicted (+3 each)
-  -- finalist 1 = champion, finalist 2 = runner_up
-  IF v_pred.champion_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
+  -- Finalist A reached the final (+3) — stored in runner_up_team_id column
+  IF v_pred.runner_up_team_id IS NOT NULL
+     AND v_pred.runner_up_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
     v_finalist1_pts := 3.0;
   END IF;
-  IF v_pred.runner_up_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
+
+  -- Finalist B reached the final (+3) — stored in finalist_2_team_id column
+  IF v_pred.finalist_2_team_id IS NOT NULL
+     AND v_pred.finalist_2_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
     v_finalist2_pts := 3.0;
   END IF;
-  -- Subtract if double-counted with champion bonus (champion is already 10, not 3+10)
-  -- Rule: finalist in final = +3 per team, champion = +10 (additional/separate)
-  -- So if champion predicted correctly: v_finalist1_pts + v_champion_pts = 3+10 = 13
 
   -- Top scorer (+10)
   IF v_pred.top_scorer_name IS NOT NULL
