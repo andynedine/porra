@@ -17,65 +17,65 @@ INSERT INTO public.groups (letter) VALUES
 -- =============================================================
 INSERT INTO public.teams (code, name, flag) VALUES
 -- Group A
-  ('USA', 'Estados Unidos', '🇺🇸'),
-  ('MAR', 'Marruecos',      '🇲🇦'),
-  ('POL', 'Polonia',        '🇵🇱'),
-  ('CIV', 'Costa de Marfil','🇨🇮'),
+  ('MEX', 'México',                '🇲🇽'),
+  ('RSA', 'Sudáfrica',             '🇿🇦'),
+  ('KOR', 'Corea del Sur',         '🇰🇷'),
+  ('CZE', 'República Checa',       '🇨🇿'),
 -- Group B
-  ('MEX', 'México',         '🇲🇽'),
-  ('GER', 'Alemania',       '🇩🇪'),
-  ('JPN', 'Japón',          '🇯🇵'),
-  ('ECU', 'Ecuador',        '🇪🇨'),
+  ('CAN', 'Canadá',                '🇨🇦'),
+  ('BIH', 'Bosnia y Herzegovina',  '🇧🇦'),
+  ('QAT', 'Qatar',                 '🇶🇦'),
+  ('SUI', 'Suiza',                 '🇨🇭'),
 -- Group C
-  ('CAN', 'Canadá',         '🇨🇦'),
-  ('FRA', 'Francia',        '🇫🇷'),
-  ('VEN', 'Venezuela',      '🇻🇪'),
-  ('SEN', 'Senegal',        '🇸🇳'),
+  ('BRA', 'Brasil',                '🇧🇷'),
+  ('MAR', 'Marruecos',             '🇲🇦'),
+  ('HAI', 'Haití',                 '🇭🇹'),
+  ('SCO', 'Escocia',               '🏴󠁧󠁢󠁳󠁣󠁴󠁿'),
 -- Group D
-  ('BRA', 'Brasil',         '🇧🇷'),
-  ('ENG', 'Inglaterra',     '🏴󠁧󠁢󠁥󠁮󠁧󠁿'),
-  ('NED', 'Países Bajos',   '🇳🇱'),
-  ('RSA', 'Sudáfrica',      '🇿🇦'),
+  ('USA', 'Estados Unidos',        '🇺🇸'),
+  ('PAR', 'Paraguay',              '🇵🇾'),
+  ('AUS', 'Australia',             '🇦🇺'),
+  ('TUR', 'Turquía',               '🇹🇷'),
 -- Group E
-  ('ARG', 'Argentina',      '🇦🇷'),
-  ('ESP', 'España',         '🇪🇸'),
-  ('ALG', 'Argelia',        '🇩🇿'),
-  ('AUS', 'Australia',      '🇦🇺'),
+  ('GER', 'Alemania',              '🇩🇪'),
+  ('CUW', 'Curazao',               '🇨🇼'),
+  ('CIV', 'Costa de Marfil',       '🇨🇮'),
+  ('ECU', 'Ecuador',               '🇪🇨'),
 -- Group F
-  ('COL', 'Colombia',       '🇨🇴'),
-  ('POR', 'Portugal',       '🇵🇹'),
-  ('KOR', 'Corea del Sur',  '🇰🇷'),
-  ('GHA', 'Ghana',          '🇬🇭'),
+  ('NED', 'Países Bajos',          '🇳🇱'),
+  ('JPN', 'Japón',                 '🇯🇵'),
+  ('SWE', 'Suecia',                '🇸🇪'),
+  ('TUN', 'Túnez',                 '🇹🇳'),
 -- Group G
-  ('URU', 'Uruguay',        '🇺🇾'),
-  ('BEL', 'Bélgica',        '🇧🇪'),
-  ('IRN', 'Irán',           '🇮🇷'),
-  ('SRB', 'Serbia',         '🇷🇸'),
+  ('BEL', 'Bélgica',               '🇧🇪'),
+  ('EGY', 'Egipto',                '🇪🇬'),
+  ('IRN', 'Irán',                  '🇮🇷'),
+  ('NZL', 'Nueva Zelanda',         '🇳🇿'),
 -- Group H
-  ('CHI', 'Chile',          '🇨🇱'),
-  ('ITA', 'Italia',         '🇮🇹'),
-  ('KSA', 'Arabia Saudí',   '🇸🇦'),
-  ('JAM', 'Jamaica',        '🇯🇲'),
+  ('ESP', 'España',                '🇪🇸'),
+  ('CPV', 'Cabo Verde',            '🇨🇻'),
+  ('KSA', 'Arabia Saudita',        '🇸🇦'),
+  ('URU', 'Uruguay',               '🇺🇾'),
 -- Group I
-  ('CRO', 'Croacia',        '🇭🇷'),
-  ('DEN', 'Dinamarca',      '🇩🇰'),
-  ('EGY', 'Egipto',         '🇪🇬'),
-  ('CMR', 'Camerún',        '🇨🇲'),
+  ('FRA', 'Francia',               '🇫🇷'),
+  ('SEN', 'Senegal',               '🇸🇳'),
+  ('NOR', 'Noruega',               '🇳🇴'),
+  ('IRQ', 'Irak',                  '🇮🇶'),
 -- Group J
-  ('SUI', 'Suiza',          '🇨🇭'),
-  ('TUR', 'Turquía',        '🇹🇷'),
-  ('NGA', 'Nigeria',        '🇳🇬'),
-  ('HON', 'Honduras',       '🇭🇳'),
+  ('ARG', 'Argentina',             '🇦🇷'),
+  ('ALG', 'Argelia',               '🇩🇿'),
+  ('AUT', 'Austria',               '🇦🇹'),
+  ('JOR', 'Jordania',              '🇯🇴'),
 -- Group K
-  ('AUT', 'Austria',        '🇦🇹'),
-  ('SCO', 'Escocia',        '🏴󠁧󠁢󠁳󠁣󠁴󠁿'),
-  ('QAT', 'Qatar',          '🇶🇦'),
-  ('NZL', 'Nueva Zelanda',  '🇳🇿'),
+  ('POR', 'Portugal',              '🇵🇹'),
+  ('COD', 'RD Congo',              '🇨🇩'),
+  ('UZB', 'Uzbekistán',            '🇺🇿'),
+  ('COL', 'Colombia',              '🇨🇴'),
 -- Group L
-  ('PAR', 'Paraguay',       '🇵🇾'),
-  ('UAE', 'Emiratos Árabes','🇦🇪'),
-  ('UZB', 'Uzbekistán',     '🇺🇿'),
-  ('PAN', 'Panamá',         '🇵🇦');
+  ('ENG', 'Inglaterra',            '🏴󠁧󠁢󠁥󠁮󠁧󠁿'),
+  ('CRO', 'Croacia',               '🇭🇷'),
+  ('GHA', 'Ghana',                 '🇬🇭'),
+  ('PAN', 'Panamá',                '🇵🇦');
 
 -- =============================================================
 -- GROUP_TEAMS assignments
@@ -88,18 +88,18 @@ DECLARE
 BEGIN
   -- Map: group_letter → [code1, code2, code3, code4]
   team_codes := ARRAY[
-    ARRAY['A','USA','MAR','POL','CIV'],
-    ARRAY['B','MEX','GER','JPN','ECU'],
-    ARRAY['C','CAN','FRA','VEN','SEN'],
-    ARRAY['D','BRA','ENG','NED','RSA'],
-    ARRAY['E','ARG','ESP','ALG','AUS'],
-    ARRAY['F','COL','POR','KOR','GHA'],
-    ARRAY['G','URU','BEL','IRN','SRB'],
-    ARRAY['H','CHI','ITA','KSA','JAM'],
-    ARRAY['I','CRO','DEN','EGY','CMR'],
-    ARRAY['J','SUI','TUR','NGA','HON'],
-    ARRAY['K','AUT','SCO','QAT','NZL'],
-    ARRAY['L','PAR','UAE','UZB','PAN']
+    ARRAY['A','MEX','RSA','KOR','CZE'],
+    ARRAY['B','CAN','BIH','QAT','SUI'],
+    ARRAY['C','BRA','MAR','HAI','SCO'],
+    ARRAY['D','USA','PAR','AUS','TUR'],
+    ARRAY['E','GER','CUW','CIV','ECU'],
+    ARRAY['F','NED','JPN','SWE','TUN'],
+    ARRAY['G','BEL','EGY','IRN','NZL'],
+    ARRAY['H','ESP','CPV','KSA','URU'],
+    ARRAY['I','FRA','SEN','NOR','IRQ'],
+    ARRAY['J','ARG','ALG','AUT','JOR'],
+    ARRAY['K','POR','COD','UZB','COL'],
+    ARRAY['L','ENG','CRO','GHA','PAN']
   ];
 
   FOR i IN 1..12 LOOP

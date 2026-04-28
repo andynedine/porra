@@ -6,18 +6,18 @@ import { ROUNDS, SCORING } from './config.js';
 
 // ---- Flag icons (flag-icons library, CDN in HTML) ----------
 const FLAG_CODE_MAP = {
-  USA:'us', MAR:'ma', POL:'pl', CIV:'ci',
-  MEX:'mx', GER:'de', JPN:'jp', ECU:'ec',
-  CAN:'ca', FRA:'fr', VEN:'ve', SEN:'sn',
-  BRA:'br', ENG:'gb-eng', NED:'nl', RSA:'za',
-  ARG:'ar', ESP:'es', ALG:'dz', AUS:'au',
-  COL:'co', POR:'pt', KOR:'kr', GHA:'gh',
-  URU:'uy', BEL:'be', IRN:'ir', SRB:'rs',
-  CHI:'cl', ITA:'it', KSA:'sa', JAM:'jm',
-  CRO:'hr', DEN:'dk', EGY:'eg', CMR:'cm',
-  SUI:'ch', TUR:'tr', NGA:'ng', HON:'hn',
-  AUT:'at', SCO:'gb-sct', QAT:'qa', NZL:'nz',
-  PAR:'py', UAE:'ae', UZB:'uz', PAN:'pa',
+  MEX:'mx', RSA:'za', KOR:'kr', CZE:'cz',
+  CAN:'ca', BIH:'ba', QAT:'qa', SUI:'ch',
+  BRA:'br', MAR:'ma', HAI:'ht', SCO:'gb-sct',
+  USA:'us', PAR:'py', AUS:'au', TUR:'tr',
+  GER:'de', CUW:'cw', CIV:'ci', ECU:'ec',
+  NED:'nl', JPN:'jp', SWE:'se', TUN:'tn',
+  BEL:'be', EGY:'eg', IRN:'ir', NZL:'nz',
+  ESP:'es', CPV:'cv', KSA:'sa', URU:'uy',
+  FRA:'fr', SEN:'sn', NOR:'no', IRQ:'iq',
+  ARG:'ar', ALG:'dz', AUT:'at', JOR:'jo',
+  POR:'pt', COD:'cd', UZB:'uz', COL:'co',
+  ENG:'gb-eng', CRO:'hr', GHA:'gh', PAN:'pa',
 };
 
 /**

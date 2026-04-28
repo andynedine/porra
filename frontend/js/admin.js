@@ -15,6 +15,57 @@ import {
 } from './utils.js';
 import { ROUNDS } from './config.js';
 
+// ============================================================
+// FLAG-SELECT HELPERS (shared with admin forms)
+// ============================================================
+function buildFlagSelect(name, teamsList, selectedId) {
+  const sid = String(selectedId ?? '');
+  const selected = teamsList.find(t => String(t.id) === sid);
+  const display = selected
+    ? `${flagImg(selected)} ${escapeHtml(selected.name)}`
+    : '— Seleccionar —';
+  const options = teamsList.map(t =>
+    `<div class="flag-option" data-value="${t.id}" role="option">${flagImg(t)} ${escapeHtml(t.name)}</div>`
+  ).join('');
+  return `
+    <div class="flag-select" data-name="${escapeHtml(name)}">
+      <input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(sid)}">
+      <button type="button" class="flag-select__trigger" aria-haspopup="listbox">
+        <span class="flag-select__value">${display}</span>
+        <span class="flag-select__arrow">▾</span>
+      </button>
+      <div class="flag-select__dropdown" role="listbox" hidden>
+        <div class="flag-option flag-option--empty" data-value="" role="option">— Seleccionar —</div>
+        ${options}
+      </div>
+    </div>`;
+}
+
+function bindFlagSelects(container) {
+  container.querySelectorAll('.flag-select').forEach(sel => {
+    const trigger   = sel.querySelector('.flag-select__trigger');
+    const dropdown  = sel.querySelector('.flag-select__dropdown');
+    const hidden    = sel.querySelector('input[type="hidden"]');
+    const valueSpan = sel.querySelector('.flag-select__value');
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+      dropdown.hidden = isOpen;
+    });
+    dropdown.addEventListener('click', e => {
+      const opt = e.target.closest('.flag-option');
+      if (!opt) return;
+      hidden.value = opt.dataset.value;
+      valueSpan.innerHTML = opt.innerHTML;
+      dropdown.hidden = true;
+    });
+  });
+  document.addEventListener('click', () => {
+    container.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+  });
+}
+
 let _teams = [];
 let _groups = [];
 
@@ -102,7 +153,7 @@ async function renderAdminResultsTab() {
               <span class="sep">–</span>
               <input type="number" name="away_score" min="0" max="99" class="score-input admin-score"
                 value="${res ? res.away_score : ''}" placeholder="–" required>
-              <span class="team-label">${escapeHtml(awayTeam)} ${escapeHtml(awayFlag)}</span>
+              <span class="team-label">${awayFlag} ${escapeHtml(awayTeam)}</span>
               <div class="extra-fields ${res?.penalties ? '' : 'hidden'}" id="extra-${m.id}">
                 <label><input type="checkbox" name="extra_time" ${res?.extra_time ? 'checked' : ''}> Prórroga</label>
                 <label><input type="checkbox" name="penalties" ${res?.penalties ? 'checked' : ''}> Penaltis</label>
@@ -186,7 +237,6 @@ async function renderAdminMatchesTab() {
 
   try {
     const matches = await getMatches();
-    const teamOptions = _teams.map(t => `<option value="${t.id}">${escapeHtml(t.flag)} ${escapeHtml(t.name)}</option>`).join('');
 
     let html = `
       <h2>Gestión de Partidos</h2>
@@ -204,13 +254,15 @@ async function renderAdminMatchesTab() {
           <td>${m.id}</td>
           <td>${escapeHtml(roundLabel(m.round))}</td>
           <td>${m.group ? 'Grupo ' + m.group.letter : '—'}</td>
-          <td>${escapeHtml(homeTeam)}</td>
-          <td>${escapeHtml(awayTeam)}</td>
+          <td>${homeTeam}</td>
+          <td>${awayTeam}</td>
           <td>${formatDate(m.match_datetime)}</td>
           <td>${escapeHtml(m.venue ?? '—')}</td>
           <td>
             <button class="btn btn--xs btn--outline edit-match-btn"
               data-id="${m.id}"
+              data-round="${m.round}"
+              data-group-id="${m.group_id ?? ''}"
               data-home="${m.home_team_id ?? ''}"
               data-away="${m.away_team_id ?? ''}"
               data-dt="${m.match_datetime ?? ''}"
@@ -224,77 +276,74 @@ async function renderAdminMatchesTab() {
     html += `
         </tbody>
       </table>
-      <!-- Inline edit form (shown on button click) -->
-      <div id="match-edit-form-wrapper" class="hidden">
-        <h3>Editar Partido</h3>
-        <form id="match-edit-form" class="admin-form">
-          <input type="hidden" name="id">
-          <div class="form-row">
-            <label>Local
-              <select name="home_team_id"><option value="">TBD</option>${teamOptions}</select>
-            </label>
-            <label>Visitante
-              <select name="away_team_id"><option value="">TBD</option>${teamOptions}</select>
-            </label>
-          </div>
-          <div class="form-row">
-            <label>Fecha/Hora (UTC)
-              <input type="datetime-local" name="match_datetime">
-            </label>
-            <label>Estadio
-              <input type="text" name="venue" maxlength="100">
-            </label>
-          </div>
-          <div class="form-row">
-            <button type="submit" class="btn btn--primary">💾 Guardar</button>
-            <button type="button" id="cancel-edit-match" class="btn btn--outline">Cancelar</button>
-          </div>
-        </form>
-      </div>`;
+      <div id="match-edit-form-wrapper" class="hidden"></div>`;
 
     container.innerHTML = html;
 
-    // Edit buttons
+    // Edit buttons — rebuild the form fresh each time so flag-selects have correct initial value
     container.querySelectorAll('.edit-match-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const wrapper = container.querySelector('#match-edit-form-wrapper');
-        const form    = container.querySelector('#match-edit-form');
+        const dtLocal = btn.dataset.dt ? new Date(btn.dataset.dt).toISOString().slice(0, 16) : '';
+        wrapper.innerHTML = `
+          <h3>Editar Partido</h3>
+          <form id="match-edit-form" class="admin-form">
+            <input type="hidden" name="id"       value="${escapeHtml(btn.dataset.id)}">
+            <input type="hidden" name="round"    value="${escapeHtml(btn.dataset.round)}">
+            <input type="hidden" name="group_id" value="${escapeHtml(btn.dataset.groupId)}">
+            <div class="form-row">
+              <label>Local
+                ${buildFlagSelect('home_team_id', _teams, btn.dataset.home)}
+              </label>
+              <label>Visitante
+                ${buildFlagSelect('away_team_id', _teams, btn.dataset.away)}
+              </label>
+            </div>
+            <div class="form-row">
+              <label>Fecha/Hora (UTC)
+                <input type="datetime-local" name="match_datetime" value="${escapeHtml(dtLocal)}">
+              </label>
+              <label>Estadio
+                <input type="text" name="venue" maxlength="100" value="${escapeHtml(btn.dataset.venue)}">
+              </label>
+            </div>
+            <div class="form-row">
+              <button type="submit" class="btn btn--primary">💾 Guardar</button>
+              <button type="button" id="cancel-edit-match" class="btn btn--outline">Cancelar</button>
+            </div>
+          </form>`;
         wrapper.classList.remove('hidden');
-        form.querySelector('[name="id"]').value = btn.dataset.id;
-        form.querySelector('[name="home_team_id"]').value = btn.dataset.home;
-        form.querySelector('[name="away_team_id"]').value = btn.dataset.away;
-        form.querySelector('[name="venue"]').value = btn.dataset.venue;
-        if (btn.dataset.dt) {
-          const local = new Date(btn.dataset.dt).toISOString().slice(0, 16);
-          form.querySelector('[name="match_datetime"]').value = local;
-        }
+        bindFlagSelects(wrapper);
+
+        wrapper.querySelector('#cancel-edit-match').addEventListener('click', () => {
+          wrapper.classList.add('hidden');
+        });
+
+        wrapper.querySelector('#match-edit-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const fd  = new FormData(e.target);
+          const submitBtn = e.target.querySelector('[type="submit"]');
+          if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner"></span>'; }
+          try {
+            await upsertMatch({
+              id:             parseInt(fd.get('id'), 10),
+              round:          fd.get('round'),
+              group_id:       parseInt(fd.get('group_id')) || null,
+              home_team_id:   parseInt(fd.get('home_team_id')) || null,
+              away_team_id:   parseInt(fd.get('away_team_id')) || null,
+              match_datetime: fd.get('match_datetime') ? new Date(fd.get('match_datetime')).toISOString() : null,
+              venue:          fd.get('venue') || null,
+            });
+            showToast('✅ Partido actualizado', 'success');
+            await renderAdminMatchesTab();
+          } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '💾 Guardar'; }
+          }
+        });
+
         wrapper.scrollIntoView({ behavior: 'smooth' });
       });
-    });
-
-    container.querySelector('#cancel-edit-match')?.addEventListener('click', () => {
-      container.querySelector('#match-edit-form-wrapper').classList.add('hidden');
-    });
-
-    container.querySelector('#match-edit-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const fd  = new FormData(e.target);
-      const btn = e.target.querySelector('[type="submit"]');
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
-      try {
-        await upsertMatch({
-          id:             parseInt(fd.get('id'), 10),
-          home_team_id:   parseInt(fd.get('home_team_id')) || null,
-          away_team_id:   parseInt(fd.get('away_team_id')) || null,
-          match_datetime: fd.get('match_datetime') ? new Date(fd.get('match_datetime')).toISOString() : null,
-          venue:          fd.get('venue') || null,
-        });
-        showToast('✅ Partido actualizado', 'success');
-        await renderAdminMatchesTab();
-      } catch (err) {
-        showToast('Error: ' + err.message, 'error');
-        if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar'; }
-      }
     });
   } catch (err) {
     container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
