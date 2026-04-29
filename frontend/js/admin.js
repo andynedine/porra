@@ -73,7 +73,7 @@ export async function initAdmin() {
   try {
     [_teams, _groups] = await Promise.all([getTeams(), getGroups()]);
     bindAdminTabs();
-    await renderAdminResultsTab();
+    await renderAdminMatchesTab();
   } catch (err) {
     showToast('Error al cargar panel admin: ' + err.message, 'error');
   }
@@ -133,7 +133,7 @@ async function renderAdminResultsTab() {
       const roundMatches = matches.filter(m => m.round === round);
       if (!roundMatches.length) continue;
 
-      html += `<details class="admin-round-details" open>
+      html += `<details class="admin-round-details">
         <summary class="admin-round-summary">${escapeHtml(roundLabel(round))} (${roundMatches.length} partidos)</summary>
         <div class="admin-matches-list">`;
 
