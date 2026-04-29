@@ -164,56 +164,61 @@ END;
 $$;
 
 -- =============================================================
--- KNOCKOUT STAGE PLACEHOLDER MATCHES (teams TBD by admin)
--- Octavos: 16 matches | Cuartos: 8 | Semis: 4 | Tercero: 1 | Final: 1
+-- KNOCKOUT STAGE MATCHES
+-- Dieciseisavos: 16 | Octavos: 8 | Cuartos: 4 | Semis: 2 | Tercero: 1 | Final: 1
+-- Teams TBD by admin once group stage ends.
+-- Times in UTC (approximate — update when confirmed).
 -- =============================================================
 
--- Octavos de Final (Round of 32) — July 5–11
-DO $$
-DECLARE
-  i INTEGER;
-BEGIN
-  FOR i IN 1..16 LOOP
-    INSERT INTO public.matches (round, match_datetime, sort_order, venue)
-    VALUES (
-      'octavos',
-      ('2026-07-05 18:00:00+00'::TIMESTAMPTZ) + ((i-1) * INTERVAL '12 hours'),
-      1000 + i,
-      'Por confirmar'
-    );
-  END LOOP;
-END;
-$$;
+-- DIECISEISAVOS DE FINAL (matches 73-88)
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('dieciseisavos', '2026-06-28 22:00:00+00', 'SoFi Stadium (Los Angeles)',                     1001),
+  ('dieciseisavos', '2026-06-29 18:00:00+00', 'Gillette Stadium (Boston)',                      1002),
+  ('dieciseisavos', '2026-06-29 21:00:00+00', 'Estadio BBVA (Monterrey)',                       1003),
+  ('dieciseisavos', '2026-06-29 23:00:00+00', 'NRG Stadium (Houston)',                          1004),
+  ('dieciseisavos', '2026-06-30 18:00:00+00', 'MetLife Stadium (Nueva York-Nueva Jersey)',       1005),
+  ('dieciseisavos', '2026-06-30 21:00:00+00', 'AT&T Stadium (Dallas)',                          1006),
+  ('dieciseisavos', '2026-06-30 23:00:00+00', 'Estadio Azteca (Ciudad de México)',               1007),
+  ('dieciseisavos', '2026-07-01 18:00:00+00', 'Mercedes-Benz Stadium (Atlanta)',                 1008),
+  ('dieciseisavos', '2026-07-01 21:00:00+00', 'Levi''s Stadium (San Francisco)',                 1009),
+  ('dieciseisavos', '2026-07-01 23:00:00+00', 'Lumen Field (Seattle)',                          1010),
+  ('dieciseisavos', '2026-07-02 18:00:00+00', 'BMO Field (Toronto)',                            1011),
+  ('dieciseisavos', '2026-07-02 22:00:00+00', 'SoFi Stadium (Los Angeles)',                     1012),
+  ('dieciseisavos', '2026-07-02 23:30:00+00', 'BC Place (Vancouver)',                           1013),
+  ('dieciseisavos', '2026-07-03 18:00:00+00', 'Hard Rock Stadium (Miami)',                      1014),
+  ('dieciseisavos', '2026-07-03 21:00:00+00', 'Arrowhead Stadium (Kansas City)',                1015),
+  ('dieciseisavos', '2026-07-03 23:00:00+00', 'AT&T Stadium (Dallas)',                          1016);
 
--- Cuartos de Final (Round of 16) — July 13–16
-DO $$
-DECLARE i INTEGER;
-BEGIN
-  FOR i IN 1..8 LOOP
-    INSERT INTO public.matches (round, match_datetime, sort_order, venue)
-    VALUES ('cuartos', ('2026-07-13 18:00:00+00'::TIMESTAMPTZ) + ((i-1) * INTERVAL '18 hours'), 2000+i, 'Por confirmar');
-  END LOOP;
-END;
-$$;
+-- OCTAVOS DE FINAL (matches 89-96)
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('octavos', '2026-07-04 18:00:00+00', 'Lincoln Financial Field (Philadelphia)',               2001),
+  ('octavos', '2026-07-04 22:00:00+00', 'NRG Stadium (Houston)',                               2002),
+  ('octavos', '2026-07-05 18:00:00+00', 'MetLife Stadium (Nueva York-Nueva Jersey)',            2003),
+  ('octavos', '2026-07-05 22:00:00+00', 'Estadio Azteca (Ciudad de México)',                    2004),
+  ('octavos', '2026-07-06 18:00:00+00', 'AT&T Stadium (Dallas)',                               2005),
+  ('octavos', '2026-07-06 22:00:00+00', 'Lumen Field (Seattle)',                               2006),
+  ('octavos', '2026-07-07 18:00:00+00', 'Mercedes-Benz Stadium (Atlanta)',                      2007),
+  ('octavos', '2026-07-07 22:00:00+00', 'BC Place (Vancouver)',                                2008);
 
--- Semifinales — July 20–21
-DO $$
-DECLARE i INTEGER;
-BEGIN
-  FOR i IN 1..4 LOOP
-    INSERT INTO public.matches (round, match_datetime, sort_order, venue)
-    VALUES ('semis', ('2026-07-20 21:00:00+00'::TIMESTAMPTZ) + ((i-1) * INTERVAL '24 hours'), 3000+i, 'Por confirmar');
-  END LOOP;
-END;
-$$;
+-- CUARTOS DE FINAL (matches 97-100)
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('cuartos', '2026-07-09 21:00:00+00', 'Gillette Stadium (Boston)',                           3001),
+  ('cuartos', '2026-07-10 21:00:00+00', 'SoFi Stadium (Los Angeles)',                          3002),
+  ('cuartos', '2026-07-11 18:00:00+00', 'Hard Rock Stadium (Miami)',                           3003),
+  ('cuartos', '2026-07-11 22:00:00+00', 'Arrowhead Stadium (Kansas City)',                     3004);
 
--- Tercer y Cuarto Puesto — July 24
-INSERT INTO public.matches (round, match_datetime, sort_order, venue)
-VALUES ('tercero', '2026-07-24 18:00:00+00', 4001, 'Por confirmar');
+-- SEMIFINALES (matches 101-102)
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('semis', '2026-07-14 21:00:00+00', 'AT&T Stadium (Dallas)',                                 4001),
+  ('semis', '2026-07-15 21:00:00+00', 'Mercedes-Benz Stadium (Atlanta)',                       4002);
 
--- La Gran Final — July 25
-INSERT INTO public.matches (round, match_datetime, sort_order, venue)
-VALUES ('final', '2026-07-25 21:00:00+00', 5001, 'Por confirmar');
+-- TERCER Y CUARTO PUESTO
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('tercero', '2026-07-18 21:00:00+00', 'Hard Rock Stadium (Miami)',                           5001);
+
+-- GRAN FINAL
+INSERT INTO public.matches (round, match_datetime, venue, sort_order) VALUES
+  ('final', '2026-07-19 21:00:00+00', 'MetLife Stadium (Nueva York-Nueva Jersey)',              6001);
 
 -- =============================================================
 -- DEADLINES (configurable — modify as needed)
@@ -221,13 +226,14 @@ VALUES ('final', '2026-07-25 21:00:00+00', 5001, 'Por confirmar');
 -- 'tournament' deadline: before the tournament starts (for champion/top scorer predictions)
 -- Each round deadline: before the first match of that round
 INSERT INTO public.deadlines (round, deadline_at) VALUES
-  ('tournament', '2026-06-10 23:59:00+00'),
-  ('group',      '2026-06-11 17:30:00+00'),
-  ('octavos',    '2026-07-04 23:59:00+00'),
-  ('cuartos',    '2026-07-12 23:59:00+00'),
-  ('semis',      '2026-07-19 23:59:00+00'),
-  ('tercero',    '2026-07-23 23:59:00+00'),
-  ('final',      '2026-07-24 23:59:00+00');
+  ('tournament',    '2026-06-10 23:59:00+00'),
+  ('group',         '2026-06-11 17:30:00+00'),
+  ('dieciseisavos', '2026-06-28 21:00:00+00'),
+  ('octavos',       '2026-07-04 17:00:00+00'),
+  ('cuartos',       '2026-07-09 20:00:00+00'),
+  ('semis',         '2026-07-14 20:00:00+00'),
+  ('tercero',       '2026-07-18 20:00:00+00'),
+  ('final',         '2026-07-19 20:00:00+00');
 
 -- =============================================================
 -- ACHIEVEMENTS

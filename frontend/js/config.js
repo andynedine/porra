@@ -18,19 +18,21 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 export const ROUNDS = {
-  group:   { label: 'Fase de Grupos',    order: 1 },
-  octavos: { label: 'Octavos de Final',  order: 2 },
-  cuartos: { label: 'Cuartos de Final',  order: 3 },
-  semis:   { label: 'Semifinales',       order: 4 },
-  tercero: { label: 'Tercer y 4º Puesto',order: 5 },
-  final:   { label: 'Gran Final',        order: 6 },
+  group:          { label: 'Fase de Grupos',         order: 1 },
+  dieciseisavos:  { label: 'Dieciseisavos de Final',  order: 2 },
+  octavos:        { label: 'Octavos de Final',        order: 3 },
+  cuartos:        { label: 'Cuartos de Final',        order: 4 },
+  semis:          { label: 'Semifinales',             order: 5 },
+  tercero:        { label: 'Tercer y 4º Puesto',      order: 6 },
+  final:          { label: 'Gran Final',              order: 7 },
 };
 
 export const SCORING = {
-  group:   { exact: 2.0,  partial: 1.0 },
-  octavos: { exact: 2.5,  partial: 1.5 },
-  cuartos: { exact: 3.0,  partial: 1.5 },
-  semis:   { exact: 3.0,  partial: 1.5 },
-  tercero: { exact: 4.0,  partial: 2.0 },
-  final:   { exact: 4.0,  partial: 2.0 },
+  group:         { exact: 2.0,  partial: 1.0 },
+  dieciseisavos: { exact: 2.5,  partial: 1.5 },
+  octavos:       { exact: 2.5,  partial: 1.5 },
+  cuartos:       { exact: 3.0,  partial: 1.5 },
+  semis:         { exact: 3.0,  partial: 1.5 },
+  tercero:       { exact: 4.0,  partial: 2.0 },
+  final:         { exact: 4.0,  partial: 2.0 },
 };

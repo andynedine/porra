@@ -98,23 +98,25 @@ BEGIN
   -- Exact score?
   IF p_home_pred = p_home_actual AND p_away_pred = p_away_actual THEN
     v_points := CASE p_round
-      WHEN 'group'   THEN 2.0
-      WHEN 'octavos' THEN 2.5
-      WHEN 'cuartos' THEN 3.0
-      WHEN 'semis'   THEN 3.0
-      WHEN 'tercero' THEN 4.0
-      WHEN 'final'   THEN 4.0
+      WHEN 'group'          THEN 2.0
+      WHEN 'dieciseisavos'  THEN 2.5
+      WHEN 'octavos'        THEN 2.5
+      WHEN 'cuartos'        THEN 3.0
+      WHEN 'semis'          THEN 3.0
+      WHEN 'tercero'        THEN 4.0
+      WHEN 'final'          THEN 4.0
       ELSE 2.0
     END;
   -- Correct result direction (partial)?
   ELSIF v_pred_result = v_actual_result THEN
     v_points := CASE p_round
-      WHEN 'group'   THEN 1.0
-      WHEN 'octavos' THEN 1.5
-      WHEN 'cuartos' THEN 1.5
-      WHEN 'semis'   THEN 1.5
-      WHEN 'tercero' THEN 2.0
-      WHEN 'final'   THEN 2.0
+      WHEN 'group'          THEN 1.0
+      WHEN 'dieciseisavos'  THEN 1.5
+      WHEN 'octavos'        THEN 1.5
+      WHEN 'cuartos'        THEN 1.5
+      WHEN 'semis'          THEN 1.5
+      WHEN 'tercero'        THEN 2.0
+      WHEN 'final'          THEN 2.0
       ELSE 1.0
     END;
   END IF;

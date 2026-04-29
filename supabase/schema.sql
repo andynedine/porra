@@ -54,11 +54,11 @@ CREATE TABLE public.group_teams (
 
 -- =============================================================
 -- MATCHES
--- round ∈ {group, octavos, cuartos, semis, tercero, final}
+-- round ∈ {group, dieciseisavos, octavos, cuartos, semis, tercero, final}
 -- =============================================================
 CREATE TABLE public.matches (
   id              SERIAL      PRIMARY KEY,
-  round           TEXT        NOT NULL CHECK (round IN ('group','octavos','cuartos','semis','tercero','final')),
+  round           TEXT        NOT NULL CHECK (round IN ('group','dieciseisavos','octavos','cuartos','semis','tercero','final')),
   group_id        INTEGER     REFERENCES public.groups(id),
   home_team_id    INTEGER     REFERENCES public.teams(id),
   away_team_id    INTEGER     REFERENCES public.teams(id),
@@ -98,7 +98,7 @@ CREATE TABLE public.match_results (
 -- =============================================================
 CREATE TABLE public.deadlines (
   id          SERIAL      PRIMARY KEY,
-  round       TEXT        NOT NULL UNIQUE CHECK (round IN ('group','octavos','cuartos','semis','tercero','final','tournament')),
+  round       TEXT        NOT NULL UNIQUE CHECK (round IN ('group','dieciseisavos','octavos','cuartos','semis','tercero','final','tournament')),
   deadline_at TIMESTAMPTZ NOT NULL,
   created_by  UUID        REFERENCES public.profiles(id),
   updated_by  UUID        REFERENCES public.profiles(id),
