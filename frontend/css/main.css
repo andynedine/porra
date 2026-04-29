@@ -96,6 +96,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   font-weight: 700;
   background: linear-gradient(135deg, var(--clr-gold), var(--clr-accent));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   white-space: nowrap;
 }
@@ -248,6 +249,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   margin-bottom: 20px;
   background: linear-gradient(90deg, var(--clr-gold), var(--clr-accent));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -261,12 +263,12 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* ---- Group block divider ---------------------------------- */
 .group-block {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 .group-block + .group-block {
   border-top: 1px solid var(--clr-border);
-  padding-top: 20px;
-  margin-top: 8px;
+  margin-top: 4px;
+  padding-top: 0;
 }
 .group-block__title {
   font-size: 0.78rem;
@@ -275,6 +277,38 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   letter-spacing: 0.08em;
   color: var(--clr-text-muted);
   margin-bottom: 12px;
+}
+
+/* ---- Group accordion ------------------------------------- */
+.group-accordion__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--clr-bg-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--clr-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.group-accordion__header:hover { background: var(--clr-bg-3); }
+.group-accordion--open .group-accordion__header {
+  background: var(--clr-bg-3);
+  color: var(--clr-accent);
+}
+.group-accordion__icon {
+  font-size: 0.7rem;
+  color: var(--clr-text-muted);
+}
+.group-accordion--open .group-accordion__icon { color: var(--clr-accent); }
+.group-accordion__body {
+  padding: 16px 0 8px;
 }
 .match-card {
   background: var(--clr-bg-1);

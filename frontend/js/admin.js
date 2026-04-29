@@ -8,7 +8,7 @@ import {
   getAllUserPredictions, adminUpdatePrediction,
   getChangeLogs, getAllUsers, updateUserRole,
   getTournamentResult, upsertTournamentResult,
-  getStandings,
+  getStandings, adminRecalculateAllScores,
 } from './api.js';
 import {
   formatDate, escapeHtml, showToast, roundLabel, deadlinePassed, groupBy, flagImg,
@@ -123,7 +123,11 @@ async function renderAdminResultsTab() {
     const matches = await getMatches();
     const rounds = Object.keys(ROUNDS);
 
-    let html = '<h2>Introducir Resultados</h2>';
+    let html = `
+      <div class="admin-results-header">
+        <h2>Introducir Resultados</h2>
+        <button id="btn-recalc-scores" class="btn btn--outline btn--sm">&#x21BB; Recalcular puntuaciones</button>
+      </div>`;
 
     for (const round of rounds) {
       const roundMatches = matches.filter(m => m.round === round);
@@ -134,7 +138,7 @@ async function renderAdminResultsTab() {
         <div class="admin-matches-list">`;
 
       for (const m of roundMatches) {
-        const res = m.match_results?.[0] ?? null;
+        const res = m.match_results ?? null;
         const homeTeam = m.home_team?.name ?? 'TBD';
         const awayTeam = m.away_team?.name ?? 'TBD';
         const homeFlag = flagImg(m.home_team);
@@ -154,17 +158,6 @@ async function renderAdminResultsTab() {
               <input type="number" name="away_score" min="0" max="99" class="score-input admin-score"
                 value="${res ? res.away_score : ''}" placeholder="–" required>
               <span class="team-label">${awayFlag} ${escapeHtml(awayTeam)}</span>
-              <div class="extra-fields ${res?.penalties ? '' : 'hidden'}" id="extra-${m.id}">
-                <label><input type="checkbox" name="extra_time" ${res?.extra_time ? 'checked' : ''}> Prórroga</label>
-                <label><input type="checkbox" name="penalties" ${res?.penalties ? 'checked' : ''}> Penaltis</label>
-                <span>Pen:</span>
-                <input type="number" name="home_pen" min="0" max="20" class="score-input admin-score--sm" value="${res?.home_pen_score ?? ''}">
-                <span>–</span>
-                <input type="number" name="away_pen" min="0" max="20" class="score-input admin-score--sm" value="${res?.away_pen_score ?? ''}">
-              </div>
-              <button type="button" class="btn btn--xs btn--outline toggle-extra" data-match="${m.id}">
-                ${round !== 'group' ? '+ Extra/Pen' : ''}
-              </button>
               <button type="submit" class="btn btn--sm btn--primary">
                 ${res ? '✏️ Actualizar' : '✅ Guardar'}
               </button>
@@ -177,18 +170,27 @@ async function renderAdminResultsTab() {
 
     container.innerHTML = html;
 
+    // Recalculate all scores button
+    document.getElementById('btn-recalc-scores')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Recalculando…';
+      try {
+        const msg = await adminRecalculateAllScores();
+        showToast(msg ?? 'Puntuaciones recalculadas', 'success');
+      } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '&#x21BB; Recalcular puntuaciones';
+      }
+    });
+
     // Bind form submits
     container.querySelectorAll('.admin-result-form').forEach(form => {
       form.addEventListener('submit', handleResultSubmit);
     });
 
-    // Toggle extra fields
-    container.querySelectorAll('.toggle-extra').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const extra = document.getElementById(`extra-${btn.dataset.match}`);
-        if (extra) extra.classList.toggle('hidden');
-      });
-    });
   } catch (err) {
     container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
   }
@@ -211,15 +213,10 @@ async function handleResultSubmit(e) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
 
   try {
-    await upsertMatchResult(matchId, homeScore, awayScore, {
-      extra_time:     fd.get('extra_time') === 'on',
-      penalties:      fd.get('penalties') === 'on',
-      home_pen_score: parseInt(fd.get('home_pen')) || null,
-      away_pen_score: parseInt(fd.get('away_pen')) || null,
-    });
+    await upsertMatchResult(matchId, homeScore, awayScore);
     const row = document.getElementById(`admin-match-${matchId}`);
     if (row) row.classList.add('admin-match-row--done');
-    showToast('✅ Resultado guardado y puntuaciones actualizadas', 'success');
+    showToast('Resultado guardado y puntuaciones actualizadas', 'success');
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
   } finally {
@@ -238,113 +235,201 @@ async function renderAdminMatchesTab() {
   try {
     const matches = await getMatches();
 
-    let html = `
+    // Sort: group phase → by group letter A→L then by date asc
+    //       other phases → keep round order, then by date asc
+    const ROUND_ORDER = Object.fromEntries(
+      Object.entries(ROUNDS).map(([k, v]) => [k, v.order])
+    );
+    matches.sort((a, b) => {
+      const rA = ROUND_ORDER[a.round] ?? 99;
+      const rB = ROUND_ORDER[b.round] ?? 99;
+      if (rA !== rB) return rA - rB;
+      if (a.round === 'group' && b.round === 'group') {
+        const gA = a.group?.letter ?? '';
+        const gB = b.group?.letter ?? '';
+        if (gA !== gB) return gA.localeCompare(gB);
+      }
+      return new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0);
+    });
+
+    // Distinct group letters for the group filter
+    const groupLetters = [...new Set(
+      matches.filter(m => m.round === 'group' && m.group?.letter)
+             .map(m => m.group.letter)
+    )].sort();
+
+    // Round options for the phase filter
+    const roundOptions = Object.entries(ROUNDS)
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([k, v]) => `<option value="${k}">${escapeHtml(v.label)}</option>`)
+      .join('');
+
+    container.innerHTML = `
       <h2>Gestión de Partidos</h2>
-      <table class="admin-table">
+      <div class="admin-matches-filters">
+        <label class="admin-filter-label">Fase
+          <select id="filter-round">
+            <option value="">— Todas —</option>
+            ${roundOptions}
+          </select>
+        </label>
+        <label class="admin-filter-label" id="filter-group-wrap" style="display:none">Grupo
+          <select id="filter-group">
+            <option value="">— Todos —</option>
+            ${groupLetters.map(l => `<option value="${l}">Grupo ${escapeHtml(l)}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+      <table class="admin-table" id="matches-admin-table">
         <thead>
           <tr><th>ID</th><th>Ronda</th><th>Grupo</th><th>Local</th><th>Visitante</th><th>Fecha</th><th>Estadio</th><th>Acción</th></tr>
         </thead>
-        <tbody>`;
+        <tbody id="matches-admin-tbody"></tbody>
+      </table>`;
 
-    for (const m of matches) {
-      const homeTeam = m.home_team ? `${flagImg(m.home_team)} ${escapeHtml(m.home_team.name)}` : 'TBD';
-      const awayTeam = m.away_team ? `${flagImg(m.away_team)} ${escapeHtml(m.away_team.name)}` : 'TBD';
-      html += `
-        <tr>
-          <td>${m.id}</td>
-          <td>${escapeHtml(roundLabel(m.round))}</td>
-          <td>${m.group ? 'Grupo ' + m.group.letter : '—'}</td>
-          <td>${homeTeam}</td>
-          <td>${awayTeam}</td>
-          <td>${formatDate(m.match_datetime)}</td>
-          <td>${escapeHtml(m.venue ?? '—')}</td>
-          <td>
-            <button class="btn btn--xs btn--outline edit-match-btn"
-              data-id="${m.id}"
-              data-round="${m.round}"
-              data-group-id="${m.group_id ?? ''}"
-              data-home="${m.home_team_id ?? ''}"
-              data-away="${m.away_team_id ?? ''}"
-              data-dt="${m.match_datetime ?? ''}"
-              data-venue="${escapeHtml(m.venue ?? '')}">
-              ✏️ Editar
-            </button>
-          </td>
-        </tr>`;
+    // --- render rows helper ---
+    function renderRows(roundFilter, groupFilter) {
+      const tbody = container.querySelector('#matches-admin-tbody');
+      const visible = matches.filter(m => {
+        if (roundFilter && m.round !== roundFilter) return false;
+        if (groupFilter && m.group?.letter !== groupFilter) return false;
+        return true;
+      });
+      if (!visible.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--clr-text-muted)">Sin partidos</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = visible.map(m => {
+        const homeTeam = m.home_team ? `${flagImg(m.home_team)} ${escapeHtml(m.home_team.name)}` : 'TBD';
+        const awayTeam = m.away_team ? `${flagImg(m.away_team)} ${escapeHtml(m.away_team.name)}` : 'TBD';
+        return `
+          <tr>
+            <td>${m.id}</td>
+            <td>${escapeHtml(roundLabel(m.round))}</td>
+            <td>${m.group ? 'Grupo ' + m.group.letter : '—'}</td>
+            <td>${homeTeam}</td>
+            <td>${awayTeam}</td>
+            <td>${formatDate(m.match_datetime)}</td>
+            <td>${escapeHtml(m.venue ?? '—')}</td>
+            <td>
+              <button class="btn btn--xs btn--outline edit-match-btn"
+                data-id="${m.id}"
+                data-round="${m.round}"
+                data-group-id="${m.group_id ?? ''}"
+                data-home="${m.home_team_id ?? ''}"
+                data-away="${m.away_team_id ?? ''}"
+                data-dt="${m.match_datetime ?? ''}"
+                data-venue="${escapeHtml(m.venue ?? '')}">
+                ✏️ Editar
+              </button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      // Re-bind edit buttons
+      bindEditButtons();
     }
 
-    html += `
-        </tbody>
-      </table>
-      <div id="match-edit-form-wrapper" class="hidden"></div>`;
+    // --- filter wiring ---
+    const filterRound = container.querySelector('#filter-round');
+    const filterGroup = container.querySelector('#filter-group');
+    const filterGroupWrap = container.querySelector('#filter-group-wrap');
 
-    container.innerHTML = html;
-
-    // Edit buttons — rebuild the form fresh each time so flag-selects have correct initial value
-    container.querySelectorAll('.edit-match-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const wrapper = container.querySelector('#match-edit-form-wrapper');
-        const dtLocal = btn.dataset.dt ? new Date(btn.dataset.dt).toISOString().slice(0, 16) : '';
-        wrapper.innerHTML = `
-          <h3>Editar Partido</h3>
-          <form id="match-edit-form" class="admin-form">
-            <input type="hidden" name="id"       value="${escapeHtml(btn.dataset.id)}">
-            <input type="hidden" name="round"    value="${escapeHtml(btn.dataset.round)}">
-            <input type="hidden" name="group_id" value="${escapeHtml(btn.dataset.groupId)}">
-            <div class="form-row">
-              <label>Local
-                ${buildFlagSelect('home_team_id', _teams, btn.dataset.home)}
-              </label>
-              <label>Visitante
-                ${buildFlagSelect('away_team_id', _teams, btn.dataset.away)}
-              </label>
-            </div>
-            <div class="form-row">
-              <label>Fecha/Hora (UTC)
-                <input type="datetime-local" name="match_datetime" value="${escapeHtml(dtLocal)}">
-              </label>
-              <label>Estadio
-                <input type="text" name="venue" maxlength="100" value="${escapeHtml(btn.dataset.venue)}">
-              </label>
-            </div>
-            <div class="form-row">
-              <button type="submit" class="btn btn--primary">💾 Guardar</button>
-              <button type="button" id="cancel-edit-match" class="btn btn--outline">Cancelar</button>
-            </div>
-          </form>`;
-        wrapper.classList.remove('hidden');
-        bindFlagSelects(wrapper);
-
-        wrapper.querySelector('#cancel-edit-match').addEventListener('click', () => {
-          wrapper.classList.add('hidden');
-        });
-
-        wrapper.querySelector('#match-edit-form').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const fd  = new FormData(e.target);
-          const submitBtn = e.target.querySelector('[type="submit"]');
-          if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner"></span>'; }
-          try {
-            await upsertMatch({
-              id:             parseInt(fd.get('id'), 10),
-              round:          fd.get('round'),
-              group_id:       parseInt(fd.get('group_id')) || null,
-              home_team_id:   parseInt(fd.get('home_team_id')) || null,
-              away_team_id:   parseInt(fd.get('away_team_id')) || null,
-              match_datetime: fd.get('match_datetime') ? new Date(fd.get('match_datetime')).toISOString() : null,
-              venue:          fd.get('venue') || null,
-            });
-            showToast('✅ Partido actualizado', 'success');
-            await renderAdminMatchesTab();
-          } catch (err) {
-            showToast('Error: ' + err.message, 'error');
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '💾 Guardar'; }
-          }
-        });
-
-        wrapper.scrollIntoView({ behavior: 'smooth' });
-      });
+    filterRound.addEventListener('change', () => {
+      const isGroup = filterRound.value === 'group';
+      filterGroupWrap.style.display = isGroup ? '' : 'none';
+      if (!isGroup) filterGroup.value = '';
+      renderRows(filterRound.value, '');
     });
+    filterGroup.addEventListener('change', () => {
+      renderRows(filterRound.value, filterGroup.value);
+    });
+
+    renderRows('', '');
+
+    // --- modal ---
+    let modal = document.getElementById('match-edit-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'match-edit-modal';
+      modal.className = 'admin-modal-overlay hidden';
+      modal.innerHTML = `<div class="admin-modal"><div id="match-edit-modal-body"></div></div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+    }
+
+    function bindEditButtons() {
+      container.querySelectorAll('.edit-match-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const dtLocal = btn.dataset.dt ? btn.dataset.dt.slice(0, 16).replace(' ', 'T') : '';
+          const body = modal.querySelector('#match-edit-modal-body');
+          body.innerHTML = `
+            <div class="admin-modal__header">
+              <h3>Editar Partido #${escapeHtml(btn.dataset.id)}</h3>
+              <button type="button" class="admin-modal__close" id="modal-close-btn">✕</button>
+            </div>
+            <form id="match-edit-form" class="admin-form">
+              <input type="hidden" name="id"       value="${escapeHtml(btn.dataset.id)}">
+              <input type="hidden" name="round"    value="${escapeHtml(btn.dataset.round)}">
+              <input type="hidden" name="group_id" value="${escapeHtml(btn.dataset.groupId)}">
+              <div class="form-row">
+                <label>Local
+                  ${buildFlagSelect('home_team_id', _teams, btn.dataset.home)}
+                </label>
+                <label>Visitante
+                  ${buildFlagSelect('away_team_id', _teams, btn.dataset.away)}
+                </label>
+              </div>
+              <div class="form-row">
+                <label>Fecha/Hora (UTC)
+                  <input type="datetime-local" name="match_datetime" value="${escapeHtml(dtLocal)}">
+                </label>
+                <label>Estadio
+                  <input type="text" name="venue" maxlength="100" value="${escapeHtml(btn.dataset.venue)}">
+                </label>
+              </div>
+              <div class="form-row">
+                <button type="submit" class="btn btn--primary">💾 Guardar</button>
+                <button type="button" id="cancel-edit-match" class="btn btn--outline">Cancelar</button>
+              </div>
+            </form>`;
+
+          bindFlagSelects(body);
+          modal.classList.remove('hidden');
+
+          const closeModal = () => modal.classList.add('hidden');
+          body.querySelector('#modal-close-btn').addEventListener('click', closeModal);
+          body.querySelector('#cancel-edit-match').addEventListener('click', closeModal);
+
+          body.querySelector('#match-edit-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const submitBtn = e.target.querySelector('[type="submit"]');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spinner"></span>'; }
+            try {
+              await upsertMatch({
+                id:             parseInt(fd.get('id'), 10),
+                round:          fd.get('round'),
+                group_id:       parseInt(fd.get('group_id')) || null,
+                home_team_id:   parseInt(fd.get('home_team_id')) || null,
+                away_team_id:   parseInt(fd.get('away_team_id')) || null,
+                match_datetime: fd.get('match_datetime') ? fd.get('match_datetime').replace('T', ' ') + ':00+00' : null,
+                venue:          fd.get('venue') || null,
+              });
+              showToast('Partido actualizado', 'success');
+              closeModal();
+              await renderAdminMatchesTab();
+            } catch (err) {
+              showToast('Error: ' + err.message, 'error');
+              if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '💾 Guardar'; }
+            }
+          });
+        });
+      });
+    }
+
   } catch (err) {
     container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
   }
@@ -364,7 +449,7 @@ async function renderAdminDeadlinesTab() {
     let html = '<h2>Fechas Límite</h2><form id="deadlines-form" class="admin-form">';
     for (const round of rounds) {
       const dl = deadlines[round];
-      const localVal = dl ? new Date(dl.deadline_at).toISOString().slice(0, 16) : '';
+      const localVal = dl ? dl.deadline_at.slice(0, 16).replace(' ', 'T') : '';
       html += `
         <div class="form-row">
           <label>${escapeHtml(round === 'tournament' ? 'Torneo (campeón/goleador)' : roundLabel(round))}
@@ -383,9 +468,9 @@ async function renderAdminDeadlinesTab() {
       try {
         for (const round of rounds) {
           const val = fd.get(round);
-          if (val) await upsertDeadline(round, new Date(val).toISOString());
+          if (val) await upsertDeadline(round, val.replace('T', ' ') + ':00+00');
         }
-        showToast('✅ Fechas límite actualizadas', 'success');
+        showToast('Fechas límite actualizadas', 'success');
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       } finally {
@@ -456,7 +541,7 @@ async function renderAdminPredictionsTab() {
             btn.disabled = true;
             try {
               await adminUpdatePrediction(predId, h, a);
-              showToast('✅ Predicción actualizada', 'success');
+              showToast('Predicción actualizada', 'success');
             } catch (err) {
               showToast('Error: ' + err.message, 'error');
             } finally { btn.disabled = false; }
@@ -547,7 +632,7 @@ async function renderAdminUsersTab() {
         btn.disabled = true;
         try {
           await updateUserRole(userId, role);
-          showToast('✅ Rol actualizado', 'success');
+          showToast('Rol actualizado', 'success');
         } catch (err) {
           showToast('Error: ' + err.message, 'error');
         } finally { btn.disabled = false; }
@@ -612,7 +697,7 @@ async function renderAdminTournamentTab() {
           top_scorer_name:     fd.get('top_scorer_name')               || null,
           top_scorer_goals:    parseInt(fd.get('top_scorer_goals'))    || null,
         });
-        showToast('✅ Resultado del torneo guardado', 'success');
+        showToast('Resultado del torneo guardado', 'success');
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       } finally {

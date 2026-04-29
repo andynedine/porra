@@ -250,6 +250,10 @@ BEGIN
     updated_at    = NOW();
 
   RETURN NEW;
+
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'update_group_standings error (match_id=%): %', NEW.match_id, SQLERRM;
+  RETURN NEW;
 END;
 $$;
 
@@ -290,10 +294,9 @@ BEGIN
       )
     ),
     calculated_at = NOW()
-  WHERE match_id = NEW.match_id
-  RETURNING user_id INTO v_affected_users;
+  WHERE match_id = NEW.match_id;
 
-  -- Re-fetch all affected user ids (workaround for RETURNING INTO array)
+  -- Collect all affected user ids
   SELECT ARRAY_AGG(DISTINCT user_id) INTO v_affected_users
   FROM public.predictions
   WHERE match_id = NEW.match_id;
@@ -308,6 +311,11 @@ BEGIN
   UPDATE public.matches SET status = 'finished', updated_at = NOW()
   WHERE id = NEW.match_id;
 
+  RETURN NEW;
+
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'update_predictions_on_result error (match_id=%): % — %',
+    NEW.match_id, SQLERRM, SQLSTATE;
   RETURN NEW;
 END;
 $$;
@@ -430,15 +438,24 @@ $$;
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_ids UUID[])
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
-  v_user_id UUID;
-  v_exact_count INTEGER;
-  v_ach RECORD;
+  v_user_id        UUID;
+  v_exact_count    INTEGER;
+  v_ach            RECORD;
 BEGIN
   FOREACH v_user_id IN ARRAY p_user_ids LOOP
-    SELECT exact_count INTO v_exact_count FROM public.scores WHERE user_id = v_user_id;
+    -- FIRST_PRED: check directly from predictions table,
+    -- independent of scores (user may have no results yet)
+    IF EXISTS (SELECT 1 FROM public.predictions WHERE user_id = v_user_id LIMIT 1) THEN
+      INSERT INTO public.user_achievements (user_id, achievement_id)
+      SELECT v_user_id, id FROM public.achievements WHERE code = 'FIRST_PRED'
+      ON CONFLICT (user_id, achievement_id) DO NOTHING;
+    END IF;
+
+    SELECT exact_count INTO v_exact_count
+      FROM public.scores WHERE user_id = v_user_id;
     IF v_exact_count IS NULL THEN CONTINUE; END IF;
 
-    -- Check threshold-based achievements
+    -- Threshold-based achievements (based on exact_count)
     FOR v_ach IN
       SELECT * FROM public.achievements
       WHERE threshold IS NOT NULL AND threshold <= v_exact_count
@@ -450,6 +467,26 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+-- Award FIRST_PRED immediately when a user inserts their first prediction
+CREATE OR REPLACE FUNCTION public.award_first_prediction()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  -- Only run once per user (their very first prediction)
+  IF (SELECT COUNT(*) FROM public.predictions WHERE user_id = NEW.user_id) = 1 THEN
+    INSERT INTO public.user_achievements (user_id, achievement_id)
+    SELECT NEW.user_id, id FROM public.achievements WHERE code = 'FIRST_PRED'
+    ON CONFLICT (user_id, achievement_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER trigger_award_first_prediction
+  AFTER INSERT ON public.predictions
+  FOR EACH ROW EXECUTE PROCEDURE public.award_first_prediction();
 
 -- =============================================================
 -- 10. CHANGE LOG WRITER (called manually from admin operations)
@@ -481,6 +518,10 @@ BEGIN
     CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE TO_JSONB(OLD) END,
     CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE TO_JSONB(NEW) END
   );
+  RETURN COALESCE(NEW, OLD);
+
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'auto_log_change error (table=%, op=%): %', TG_TABLE_NAME, TG_OP, SQLERRM;
   RETURN COALESCE(NEW, OLD);
 END;
 $$;

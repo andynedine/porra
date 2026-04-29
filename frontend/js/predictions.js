@@ -76,11 +76,25 @@ async function renderPredictionsUI(container) {
 
     function buildCard(m) {
       const pred = predMap[m.id] ?? { home_score: -1, away_score: -1, points: 0, is_exact: false, is_partial: false, calculated_at: null };
-      const result = m.match_results?.[0] ?? null;
+      const result = m.match_results ?? null;
       const pts = result
         ? previewPoints(m.round, pred.home_score, pred.away_score, result.home_score, result.away_score)
         : null;
-      const rCls = resultClass(pred.is_exact, pred.is_partial, pred.calculated_at);
+      // Compute result class from live data when result is available (avoids stale DB cache)
+      let rCls = '';
+      if (result && pred.home_score >= 0 && pred.away_score >= 0) {
+        const pH = pred.home_score, pA = pred.away_score;
+        const rH = result.home_score, rA = result.away_score;
+        if (pH === rH && pA === rA) {
+          rCls = 'result--exact';
+        } else {
+          const predDir = pH > pA ? 'H' : pH < pA ? 'A' : 'D';
+          const resDir  = rH > rA ? 'H' : rH < rA ? 'A' : 'D';
+          rCls = predDir === resDir ? 'result--partial' : 'result--miss';
+        }
+      } else {
+        rCls = resultClass(pred.is_exact, pred.is_partial, pred.calculated_at);
+      }
       const homeDisplay = pred.home_score >= 0 ? pred.home_score : '';
       const awayDisplay = pred.away_score >= 0 ? pred.away_score : '';
       return `
@@ -117,7 +131,6 @@ async function renderPredictionsUI(container) {
           ${result ? `
             <div class="match-card__result">
               Resultado: ${result.home_score} – ${result.away_score}
-              ${result.penalties ? `(pen. ${result.home_pen_score}–${result.away_pen_score})` : ''}
             </div>` : ''}
           ${pts !== null ? `<div class="match-card__points ${pts > 0 ? 'points--positive' : 'points--zero'}">+${fmtPts(pts)} pts</div>` : ''}
           <div class="match-card__scoring-hint">${escapeHtml(scoringTooltip(m.round))}</div>
@@ -133,14 +146,19 @@ async function renderPredictionsUI(container) {
         const lb = byGroup[b][0]?.group?.letter ?? '';
         return la.localeCompare(lb);
       });
-      for (const gId of sortedGroupIds) {
+      for (const [i, gId] of sortedGroupIds.entries()) {
         const gMatches = byGroup[gId];
         const letter = gMatches[0]?.group?.letter ?? gId;
-        contentHtml += `<div class="group-block">
-          <h4 class="group-block__title">Grupo ${escapeHtml(letter)}</h4>
-          <div class="matches-grid">`;
+        const isFirst = i === 0;
+        contentHtml += `<div class="group-block group-accordion ${isFirst ? 'group-accordion--open' : ''}" data-group="${escapeHtml(letter)}">
+          <button type="button" class="group-accordion__header">
+            <span>Grupo ${escapeHtml(letter)}</span>
+            <span class="group-accordion__icon">${isFirst ? '▲' : '▼'}</span>
+          </button>
+          <div class="group-accordion__body" ${isFirst ? '' : 'hidden'}>
+            <div class="matches-grid">`;
         for (const m of gMatches) contentHtml += buildCard(m);
-        contentHtml += `</div></div>`;
+        contentHtml += `</div></div></div>`;
       }
     } else {
       contentHtml += `<div class="matches-grid">`;
@@ -191,6 +209,34 @@ async function renderPredictionsUI(container) {
 
   // Tournament form
   bindTournamentForm(container);
+
+  // Event: group accordions
+  container.querySelectorAll('.group-accordion__header').forEach(header => {
+    header.addEventListener('click', () => {
+      const clicked = header.closest('.group-accordion');
+      const panel   = clicked.querySelector('.round-panel');
+      // Get all accordions in the same round panel
+      const allInRound = panel
+        ? []
+        : clicked.closest('.round-panel')?.querySelectorAll('.group-accordion') ?? [];
+
+      clicked.closest('.round-panel')?.querySelectorAll('.group-accordion').forEach(acc => {
+        const isTarget = acc === clicked;
+        const body = acc.querySelector('.group-accordion__body');
+        const icon = acc.querySelector('.group-accordion__icon');
+        if (isTarget) {
+          const opening = body.hidden;
+          body.hidden = !opening;
+          icon.textContent = opening ? '▲' : '▼';
+          acc.classList.toggle('group-accordion--open', opening);
+        } else {
+          body.hidden = true;
+          icon.textContent = '▼';
+          acc.classList.remove('group-accordion--open');
+        }
+      });
+    });
+  });
 
   // Warn before navigating away with unsaved changes
   window.addEventListener('beforeunload', e => {
@@ -266,7 +312,7 @@ async function saveRound(round, predMap, matches) {
     const indicator = document.getElementById(`unsaved-${round}`);
     if (indicator) indicator.classList.add('hidden');
 
-    showToast(`✅ ${toSave.length} predicciones guardadas`, 'success');
+    showToast(`${toSave.length} predicciones guardadas`, 'success');
   } catch (err) {
     showToast(`Error al guardar: ${err.message}`, 'error');
   } finally {
@@ -386,7 +432,7 @@ function bindTournamentForm(container) {
         finalist_2_team_id:  parseInt(fd.get('finalist_2_team_id')) || null,
         top_scorer_name:     fd.get('top_scorer_name'),
       });
-      showToast('✅ Predicciones del torneo guardadas', 'success');
+      showToast('Predicciones del torneo guardadas', 'success');
     } catch (err) {
       showToast(`Error: ${err.message}`, 'error');
     } finally {

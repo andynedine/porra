@@ -34,7 +34,7 @@ export function flagImg(team) {
 export function formatDate(dt, opts = {}) {
   if (!dt) return '—';
   const d = new Date(dt);
-  const defaults = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
+  const defaults = { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' };
   return d.toLocaleDateString('es-ES', { ...defaults, ...opts });
 }
 

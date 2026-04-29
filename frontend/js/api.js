@@ -28,13 +28,21 @@ export async function getMatches(round = null) {
       home_team:home_team_id(id, name, code, flag),
       away_team:away_team_id(id, name, code, flag),
       group:group_id(letter),
-      match_results(home_score, away_score, extra_time, penalties, home_pen_score, away_pen_score)
+      match_results(home_score, away_score)
     `)
     .order('sort_order');
   if (round) query = query.eq('round', round);
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  // Normalize match_results: PostgREST may return an object {} or array [] depending on version.
+  // Normalize to a single result object or null.
+  return (data ?? []).map(m => {
+    let r = m.match_results;
+    if (Array.isArray(r)) r = r[0] ?? null;
+    // Guard against empty object with no scores
+    if (r && r.home_score === undefined && r.away_score === undefined) r = null;
+    return { ...m, match_results: r };
+  });
 }
 
 export async function getMatch(matchId) {
@@ -222,24 +230,26 @@ export async function getAllAchievements() {
   const { data, error } = await supabase
     .from('achievements')
     .select('*')
-    .order('threshold');
+    .order('threshold', { nullsFirst: true });
   if (error) throw error;
   return data;
 }
 
 // ---- ADMIN: Match results -----------------------------------
-export async function upsertMatchResult(matchId, homeScore, awayScore, extras = {}) {
+export async function adminRecalculateAllScores() {
+  const { data, error } = await supabase.rpc('admin_recalculate_all_scores');
+  if (error) throw error;
+  return data;
+}
+
+export async function upsertMatchResult(matchId, homeScore, awayScore) {
   const { data, error } = await supabase
     .from('match_results')
     .upsert({
-      match_id:       matchId,
-      home_score:     homeScore,
-      away_score:     awayScore,
-      extra_time:     extras.extra_time ?? false,
-      penalties:      extras.penalties ?? false,
-      home_pen_score: extras.home_pen_score ?? null,
-      away_pen_score: extras.away_pen_score ?? null,
-      updated_at:     new Date().toISOString(),
+      match_id:   matchId,
+      home_score: homeScore,
+      away_score: awayScore,
+      updated_at: new Date().toISOString(),
     }, { onConflict: 'match_id' })
     .select()
     .single();

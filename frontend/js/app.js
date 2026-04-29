@@ -101,10 +101,13 @@ async function initDashboardPage(session) {
   const defaultTab = document.querySelector('.dash-tab[data-tab="partidos"]');
   if (defaultTab) activateDashTab(defaultTab, tabs);
 
-  // Realtime: refresh matches panel if new results come in
+  // Realtime: refresh active panel when results change
   subscribeToMatchResults(async () => {
     const activePanel = document.querySelector('.dash-panel:not(.hidden)');
-    if (activePanel?.id === 'panel-partidos') await initMatchesTab(user);
+    if (!activePanel) return;
+    if (activePanel.id === 'panel-partidos')      await initMatchesTab(user);
+    if (activePanel.id === 'panel-predicciones')  await initPredictions(user);
+    if (activePanel.id === 'panel-estadisticas')  await initStats(user);
   });
 }
 
@@ -169,12 +172,12 @@ async function initMatchesTab(user) {
 }
 
 function buildMatchRow(m) {
-  const res = m.match_results?.[0] ?? null;
+  const res = m.match_results ?? null;
   const homeFlag = m.home_team ? flagImg(m.home_team) : '';
   const awayFlag = m.away_team ? flagImg(m.away_team) : '';
   const homeName = m.home_team ? escapeHtml(m.home_team.name) : 'TBD';
   const awayName = m.away_team ? escapeHtml(m.away_team.name) : 'TBD';
-  const score = res ? `${res.home_score} – ${res.away_score}${res.penalties ? ' (pen)' : ''}` : 'vs';
+  const score = res ? `${res.home_score} – ${res.away_score}` : 'vs';
   const statusClass = m.status === 'finished' ? 'match-row--done' : m.status === 'live' ? 'match-row--live' : '';
 
   return `
