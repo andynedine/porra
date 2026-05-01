@@ -200,37 +200,40 @@ async function initProfileTab(profile, user) {
   if (!container || !profile) return;
 
   container.innerHTML = `
-    <h2 class="section-title">👤 Mi Perfil</h2>
-    <form id="profile-form" class="profile-form">
-      <div class="form-group">
-        <label>Nombre de usuario</label>
-        <input type="text" name="username" value="${escapeHtml(profile.username)}" minlength="3" maxlength="30" required>
+    <div class="profile-cols">
+      <div class="profile-col">
+        <h3 class="profile-col__title">👤 Mi Perfil</h3>
+        <form id="profile-form" class="profile-form">
+          <div class="form-group">
+            <label>Nombre de usuario</label>
+            <input type="text" name="username" value="${escapeHtml(profile.username)}" minlength="3" maxlength="30" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" value="${escapeHtml(profile.email)}" disabled>
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" name="phone" value="${escapeHtml(profile.phone ?? '')}">
+          </div>
+          <button type="submit" class="btn btn--primary">💾 Actualizar perfil</button>
+        </form>
       </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" value="${escapeHtml(profile.email)}" disabled>
+      <div class="profile-col">
+        <h3 class="profile-col__title">🔑 Cambiar contraseña</h3>
+        <form id="password-form" class="profile-form">
+          <div class="form-group">
+            <label>Nueva contraseña</label>
+            <input type="password" name="new_password" minlength="6" required>
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña</label>
+            <input type="password" name="confirm_password" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn--outline">🔑 Cambiar contraseña</button>
+        </form>
       </div>
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input type="tel" name="phone" value="${escapeHtml(profile.phone ?? '')}">
-      </div>
-      <button type="submit" class="btn btn--primary">💾 Actualizar perfil</button>
-    </form>
-
-    <hr class="divider">
-
-    <h3>🔑 Cambiar contraseña</h3>
-    <form id="password-form" class="profile-form">
-      <div class="form-group">
-        <label>Nueva contraseña</label>
-        <input type="password" name="new_password" minlength="6" required>
-      </div>
-      <div class="form-group">
-        <label>Confirmar contraseña</label>
-        <input type="password" name="confirm_password" minlength="6" required>
-      </div>
-      <button type="submit" class="btn btn--outline">🔑 Cambiar contraseña</button>
-    </form>`;
+    </div>`;
 
   // Profile update
   container.querySelector('#profile-form').addEventListener('submit', async (e) => {
