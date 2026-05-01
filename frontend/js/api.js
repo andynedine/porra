@@ -161,6 +161,32 @@ export async function upsertGroupPositionPrediction(userId, groupId, positions) 
   return data;
 }
 
+// ---- Group Position Results (official, entered by SUPERADMIN) --
+export async function getGroupPositionResults() {
+  const { data, error } = await supabase
+    .from('group_position_results')
+    .select('*');
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function upsertGroupPositionResult(groupId, positions) {
+  const { data, error } = await supabase
+    .from('group_position_results')
+    .upsert({
+      group_id:       groupId,
+      pos_1_team_id:  positions[0] ?? null,
+      pos_2_team_id:  positions[1] ?? null,
+      pos_3_team_id:  positions[2] ?? null,
+      pos_4_team_id:  positions[3] ?? null,
+      updated_at:     new Date().toISOString(),
+    }, { onConflict: 'group_id' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 // ---- Tournament Predictions --------------------------------
 export async function getTournamentPrediction(userId) {
   const { data, error } = await supabase
@@ -229,7 +255,7 @@ export async function getMyPointsBreakdown(userId) {
       .maybeSingle(),
     supabase
       .from('group_position_predictions')
-      .select('points')
+      .select('points, group_id, calculated_at, group:group_id(letter)')
       .eq('user_id', userId)
       .not('calculated_at', 'is', null),
   ]);
@@ -244,12 +270,21 @@ export async function getMyPointsBreakdown(userId) {
     byRound[round] = (byRound[round] ?? 0) + (p.points ?? 0);
   }
 
-  // Sum group position points
-  const groupPositionPts = (groupPosRes.data ?? []).reduce((acc, g) => acc + (g.points ?? 0), 0);
+  // Per-group classification points (sorted by group letter)
+  const groupPositionByGroup = (groupPosRes.data ?? [])
+    .sort((a, b) => (a.group?.letter ?? '').localeCompare(b.group?.letter ?? ''))
+    .map(g => ({
+      group_id:     g.group_id,
+      group_letter: g.group?.letter ?? '?',
+      points:       g.points ?? 0,
+    }));
+
+  const groupPositionPts = groupPositionByGroup.reduce((acc, g) => acc + g.points, 0);
 
   return {
     byRound,
     groupPositionPts,
+    groupPositionByGroup,
     tournament: tournamentRes.data ?? null,
   };
 }

@@ -4,7 +4,8 @@
 import {
   getMatches, getDeadlines, getMyPredictions,
   savePredictionsBulk, upsertGroupPositionPrediction,
-  getGroupPositionPredictions, upsertTournamentPrediction,
+  getGroupPositionPredictions, getGroupPositionResults,
+  upsertTournamentPrediction,
   getTournamentPrediction, getGroups, getTeams,
 } from './api.js';
 import {
@@ -35,21 +36,37 @@ export async function initPredictions(user) {
 }
 
 async function renderPredictionsUI(container) {
-  const [matches, myPreds, groups, teams] = await Promise.all([
+  const [matches, myPreds, groups, teams, groupPosPreds, groupPosResults] = await Promise.all([
     getMatches(),
     getMyPredictions(_currentUser.id),
     getGroups(),
     getTeams(),
+    getGroupPositionPredictions(_currentUser.id),
+    getGroupPositionResults(),
   ]);
 
   // Index my predictions by match_id
   const predMap = {};
   for (const p of myPreds) predMap[p.match_id] = p;
 
-  // Sort matches by date ascending within each round
+  // Sort matches by date ascending
   matches.sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
 
-  // Build round tabs
+  // ---- SUB-NAV ----
+  const subnavHtml = `
+    <nav class="pred-subnav" role="tablist" aria-label="Secciones de predicciones">
+      <button class="pred-subtab active" role="tab" data-subtab="torneo" aria-selected="true">🏆 Resultado final</button>
+      <button class="pred-subtab" role="tab" data-subtab="clasificacion" aria-selected="false">📋 Clasificación Fase Regular</button>
+      <button class="pred-subtab" role="tab" data-subtab="fases" aria-selected="false">⚽ Resultados por fases</button>
+    </nav>`;
+
+  // ---- PANEL: TORNEO ----
+  const tournamentHtml = await buildTournamentPredSection(teams);
+
+  // ---- PANEL: CLASIFICACIÓN ----
+  const classifHtml = buildGroupClassificationSection(groups, teams, groupPosPreds, groupPosResults);
+
+  // ---- PANEL: FASES (existing round tabs) ----
   const roundOrder = Object.keys(ROUNDS);
   const matchesByRound = groupBy(matches, 'round');
 
@@ -186,12 +203,27 @@ async function renderPredictionsUI(container) {
 
   tabsHtml += '</div>';
 
-  // Tournament predictions section
-  const tournamentHtml = await buildTournamentPredSection(teams);
+  // ---- ASSEMBLE ----
+  container.innerHTML = subnavHtml
+    + `<div id="pred-panel-torneo"        class="pred-subpanel">${tournamentHtml}</div>`
+    + `<div id="pred-panel-clasificacion" class="pred-subpanel hidden">${classifHtml}</div>`
+    + `<div id="pred-panel-fases"         class="pred-subpanel hidden">${tabsHtml}${contentHtml}</div>`;
 
-  container.innerHTML = tournamentHtml + tabsHtml + contentHtml;
+  // Sub-tab switching
+  container.querySelectorAll('.pred-subtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.pred-subtab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      container.querySelectorAll('.pred-subpanel').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      document.getElementById(`pred-panel-${tab.dataset.subtab}`)?.classList.remove('hidden');
+    });
+  });
 
-  // Activate first tab
+  // Activate first round tab
   const firstTab = container.querySelector('.round-tab');
   if (firstTab) activateTab(firstTab);
 
@@ -212,6 +244,9 @@ async function renderPredictionsUI(container) {
 
   // Tournament form
   bindTournamentForm(container);
+
+  // Group classification forms
+  bindGroupClassificationForms(container);
 
   // Event: group accordions
   container.querySelectorAll('.group-accordion__header').forEach(header => {
@@ -385,7 +420,7 @@ async function buildTournamentPredSection(teams) {
         </div>
       </form>
     </section>
-    <div class="phases-divider">
+    <div class="phases-divider" style="display:none">
       <span class="phases-divider__label">Predicciones por fase</span>
     </div>`;
 }
@@ -394,8 +429,10 @@ function bindTournamentForm(container) {
   const form = container.querySelector('#tournament-form');
   if (!form) return;
 
-  // Wire custom flag-selects
-  container.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
+  // Wire custom flag-selects — scope to tournament panel only to avoid
+  // double-binding with classification panel flag-selects
+  const scope = container.querySelector('#pred-panel-torneo') ?? container;
+  scope.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
     const trigger = sel.querySelector('.flag-select__trigger');
     const dropdown = sel.querySelector('.flag-select__dropdown');
     const hidden = sel.querySelector('input[type="hidden"]');
@@ -441,5 +478,155 @@ function bindTournamentForm(container) {
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar predicciones del torneo'; }
     }
+  });
+}
+
+// --- Group Classification -----------------------------------
+function buildGroupClassificationSection(groups, allTeams, groupPosPreds, groupPosResults) {
+  const dl = _deadlines['group'];
+  const closed = deadlinePassed(dl?.deadline_at);
+
+  // Index existing predictions by group_id
+  const predsByGroup = {};
+  for (const p of groupPosPreds) predsByGroup[p.group_id] = p;
+
+  // Index official results by group_id
+  const resultsByGroup = {};
+  for (const r of (groupPosResults ?? [])) resultsByGroup[r.group_id] = r;
+
+  function buildTeamSelect(name, teamsList, selectedId) {
+    const sel = teamsList.find(t => t.id === selectedId);
+    const display = sel ? `${flagImg(sel)} ${escapeHtml(sel.name)}` : '— Seleccionar —';
+    const options = teamsList.map(t =>
+      `<div class="flag-option" data-value="${t.id}" role="option">${flagImg(t)} ${escapeHtml(t.name)}</div>`
+    ).join('');
+    return `
+      <div class="flag-select ${closed ? 'flag-select--disabled' : ''}" data-name="${escapeHtml(name)}">
+        <input type="hidden" name="${escapeHtml(name)}" value="${selectedId ?? ''}">
+        <button type="button" class="flag-select__trigger" ${closed ? 'disabled' : ''} aria-haspopup="listbox">
+          <span class="flag-select__value">${display}</span>
+          <span class="flag-select__arrow">▾</span>
+        </button>
+        <div class="flag-select__dropdown" role="listbox" hidden>
+          <div class="flag-option flag-option--empty" data-value="" role="option">— Seleccionar —</div>
+          ${options}
+        </div>
+      </div>`;
+  }
+
+  let html = `
+    <section class="group-classification">
+      <div class="group-classification__intro">
+        <p>Predice el orden final de cada grupo. <strong>+0.5 pts</strong> por cada posición acertada. <strong>+1 pt extra</strong> por acertar las 4 posiciones de un grupo.</p>
+      </div>
+      ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
+        ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
+      </div>` : ''}
+      <div class="group-classification__grid">`;
+
+  // Build a fast lookup of teams by id
+  const teamsById = Object.fromEntries(allTeams.map(t => [t.id, t]));
+
+  for (const group of groups) {
+    const teamIds = (group.group_teams ?? []).map(gt => gt.team_id).filter(Boolean);
+    const teamsList = teamIds
+      .map(id => teamsById[id])
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const pred = predsByGroup[group.id] ?? {};
+    const hasOfficialResult = resultsByGroup[group.id] !== undefined;
+
+    // Points badge: show only after admin has entered official results
+    const ptsEarned = (hasOfficialResult && pred.calculated_at != null)
+      ? (pred.points ?? 0)
+      : null;
+    const ptsBadge = ptsEarned !== null
+      ? `<span class="group-classif-pts ${ptsEarned > 0 ? 'group-classif-pts--pos' : ''}">${ptsEarned > 0 ? '+' : ''}${fmtPts(ptsEarned)} pts</span>`
+      : (hasOfficialResult ? `<span class="group-classif-pts group-classif-pts--pending">—</span>` : '');
+
+    html += `
+      <div class="group-classif-card">
+        <div class="group-classif-card__title">
+          Grupo ${escapeHtml(group.letter)}
+          ${ptsBadge}
+        </div>
+        <form class="group-classif-form" data-group-id="${group.id}">
+          <div class="group-classif-positions">
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥇 1º</span>
+              ${buildTeamSelect('pos_1', teamsList, pred.pos_1_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥈 2º</span>
+              ${buildTeamSelect('pos_2', teamsList, pred.pos_2_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥉 3º</span>
+              ${buildTeamSelect('pos_3', teamsList, pred.pos_3_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">4º</span>
+              ${buildTeamSelect('pos_4', teamsList, pred.pos_4_team_id ?? null)}
+            </div>
+          </div>
+          ${!closed ? `<button type="submit" class="btn btn--sm btn--primary group-classif-save" data-label="Guardar Grupo ${escapeHtml(group.letter)}">💾 Guardar Grupo ${escapeHtml(group.letter)}</button>` : ''}
+        </form>
+      </div>`;
+  }
+
+  html += `</div></section>`;
+  return html;
+}
+
+function bindGroupClassificationForms(container) {
+  const panel = container.querySelector('#pred-panel-clasificacion');
+  if (!panel) return;
+
+  // Wire flag-select dropdowns (same pattern as bindTournamentForm)
+  panel.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
+    const trigger   = sel.querySelector('.flag-select__trigger');
+    const dropdown  = sel.querySelector('.flag-select__dropdown');
+    const hidden    = sel.querySelector('input[type="hidden"]');
+    const valueSpan = sel.querySelector('.flag-select__value');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+      dropdown.hidden = isOpen;
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const opt = e.target.closest('.flag-option');
+      if (!opt) return;
+      hidden.value = opt.dataset.value;
+      valueSpan.innerHTML = opt.innerHTML;
+      dropdown.hidden = true;
+    });
+  });
+
+  // Wire form submits
+  panel.querySelectorAll('.group-classif-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const groupId = parseInt(form.dataset.groupId, 10);
+      const fd  = new FormData(form);
+      const btn = form.querySelector('.group-classif-save');
+      const positions = [
+        parseInt(fd.get('pos_1')) || null,
+        parseInt(fd.get('pos_2')) || null,
+        parseInt(fd.get('pos_3')) || null,
+        parseInt(fd.get('pos_4')) || null,
+      ];
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+      try {
+        await upsertGroupPositionPrediction(_currentUser.id, groupId, positions);
+        showToast('Clasificación guardada', 'success');
+      } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = `💾 ${btn.dataset.label ?? 'Guardar'}`; }
+      }
+    });
   });
 }

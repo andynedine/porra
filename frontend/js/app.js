@@ -135,6 +135,8 @@ async function initMatchesTab(user) {
   container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando partidos…</div>';
   try {
     const [matches, groups] = await Promise.all([getMatches(), getGroups()]);
+    // Sort all matches by datetime ascending upfront
+    matches.sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
     const byRound = groupBy(matches, 'round');
     const roundOrder = ['group', 'octavos', 'cuartos', 'semis', 'tercero', 'final'];
     let html = '';
@@ -146,7 +148,7 @@ async function initMatchesTab(user) {
       html += `<h3 class="round-heading">${escapeHtml(roundLabel(round))}</h3>`;
 
       if (round === 'group') {
-        // Render group-by-group
+        // Render group-by-group (already sorted by datetime from above)
         const byGroup = groupBy(roundMatches, 'group_id');
         for (const g of groups) {
           const gMatches = byGroup[g.id] ?? [];

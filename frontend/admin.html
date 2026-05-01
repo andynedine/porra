@@ -16,7 +16,9 @@
 
   <!-- ===== HEADER ===== -->
   <header class="app-header" role="banner">
-    <span class="app-header__logo">⚽ Porra 2026</span>
+    <span class="app-header__logo">
+        <img src="images/logo.png" alt="" class="app-header__logo-img" aria-hidden="true">Porra 2026
+      </span>
     <span class="admin-badge">👑 SUPERADMIN</span>
     <div class="app-header__spacer"></div>
     <div class="app-header__user">
@@ -31,10 +33,6 @@
 
   <!-- ===== ADMIN TABS ===== -->
   <nav class="admin-tabs" role="tablist" aria-label="Secciones de administración">
-    <button class="admin-tab active" role="tab" data-panel="results"
-      aria-selected="true" aria-controls="admin-panel-results">
-      ✅ Resultados
-    </button>
     <button class="admin-tab" role="tab" data-panel="matches"
       aria-selected="false" aria-controls="admin-panel-matches">
       📅 Partidos
@@ -43,13 +41,13 @@
       aria-selected="false" aria-controls="admin-panel-deadlines">
       ⏰ Plazos
     </button>
+    <button class="admin-tab active" role="tab" data-panel="results"
+      aria-selected="true" aria-controls="admin-panel-results">
+      ✅ Resultados
+    </button>
     <button class="admin-tab" role="tab" data-panel="predictions"
       aria-selected="false" aria-controls="admin-panel-predictions">
       ✍️ Predicciones
-    </button>
-    <button class="admin-tab" role="tab" data-panel="tournament"
-      aria-selected="false" aria-controls="admin-panel-tournament">
-      🏆 Torneo
     </button>
     <button class="admin-tab" role="tab" data-panel="users"
       aria-selected="false" aria-controls="admin-panel-users">
@@ -81,11 +79,6 @@
 
     <!-- PREDICCIONES USUARIOS -->
     <section id="admin-panel-predictions" class="admin-panel hidden" role="tabpanel">
-      <div class="loading"><span class="spinner"></span></div>
-    </section>
-
-    <!-- TORNEO -->
-    <section id="admin-panel-tournament" class="admin-panel hidden" role="tabpanel">
       <div class="loading"><span class="spinner"></span></div>
     </section>
 

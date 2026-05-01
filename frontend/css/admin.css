@@ -291,6 +291,73 @@ details[open] .admin-round-summary::before { transform: rotate(90deg); }
 /* ---- Role Select ----------------------------------------- */
 .role-select { width: auto; min-width: 120px; }
 
+/* ---- Admin Sub-nav (inside Results panel) ---------------- */
+.admin-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--clr-border);
+}
+.admin-subtab {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 2px solid var(--clr-border);
+  background: var(--clr-bg-2);
+  color: var(--clr-text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+.admin-subtab:hover { color: var(--clr-text); border-color: var(--clr-text-muted); }
+.admin-subtab.active {
+  border-color: var(--clr-gold);
+  color: var(--clr-gold);
+  background: rgba(255, 197, 0, 0.08);
+}
+.admin-subpanel { animation: fadeIn 0.2s ease; }
+.admin-subpanel.hidden { display: none; }
+
+/* ---- Admin Classification Grid (Group Results) ----------- */
+.admin-classif-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.admin-classif-card {
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.admin-classif-card__title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--clr-gold);
+  margin-bottom: 12px;
+}
+.admin-classif-positions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-classif-pos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.admin-classif-pos__label {
+  min-width: 44px;
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+  flex-shrink: 0;
+}
+.admin-classif-pos .flag-select { flex: 1; }
+
 /* ---- Responsive ------------------------------------------ */
 @media (max-width: 640px) {
   .admin-main { padding: 16px 10px 64px; }

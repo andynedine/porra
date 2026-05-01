@@ -8,6 +8,7 @@ import {
   getAllUserPredictions, adminUpdatePrediction,
   getChangeLogs, getAllUsers, updateUserRole,
   getTournamentResult, upsertTournamentResult,
+  getGroupPositionResults, upsertGroupPositionResult,
   getStandings, adminRecalculateAllScores,
 } from './api.js';
 import {
@@ -107,18 +108,60 @@ async function loadAdminPanel(panel) {
     case 'predictions':await renderAdminPredictionsTab(); break;
     case 'logs':       await renderAdminLogsTab(); break;
     case 'users':      await renderAdminUsersTab(); break;
-    case 'tournament': await renderAdminTournamentTab(); break;
   }
 }
 
 // ============================================================
-// RESULTS — Enter official match results
+// RESULTS — Sub-nav: Resultado final / Clasificación / Por fases
 // ============================================================
 async function renderAdminResultsTab() {
   const container = document.getElementById('admin-panel-results');
   if (!container) return;
-  container.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
 
+  container.innerHTML = `
+    <nav class="admin-subnav" role="tablist">
+      <button class="admin-subtab active" role="tab" data-subpanel="final" aria-selected="true">🏆 Resultado final</button>
+      <button class="admin-subtab" role="tab" data-subpanel="classification" aria-selected="false">📊 Clasificación Fase Regular</button>
+      <button class="admin-subtab" role="tab" data-subpanel="phases" aria-selected="false">✅ Resultados por fases</button>
+    </nav>
+    <div id="admin-results-subpanel-final" class="admin-subpanel"></div>
+    <div id="admin-results-subpanel-classification" class="admin-subpanel hidden"></div>
+    <div id="admin-results-subpanel-phases" class="admin-subpanel hidden"></div>`;
+
+  container.querySelectorAll('.admin-subtab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      container.querySelectorAll('.admin-subtab').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      container.querySelectorAll('.admin-subpanel').forEach(p => p.classList.add('hidden'));
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      const subPanel = document.getElementById(`admin-results-subpanel-${btn.dataset.subpanel}`);
+      if (subPanel) {
+        subPanel.classList.remove('hidden');
+        if (!subPanel.dataset.loaded) {
+          await loadAdminResultsSubpanel(btn.dataset.subpanel, subPanel);
+        }
+      }
+    });
+  });
+
+  const initialPanel = document.getElementById('admin-results-subpanel-final');
+  await loadAdminResultsSubpanel('final', initialPanel);
+}
+
+async function loadAdminResultsSubpanel(subpanel, panel) {
+  panel.dataset.loaded = '1';
+  panel.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
+  switch (subpanel) {
+    case 'final':          await renderResultsFinalSubpanel(panel); break;
+    case 'classification': await renderResultsClassificationSubpanel(panel); break;
+    case 'phases':         await renderResultsByPhaseSubpanel(panel); break;
+  }
+}
+
+async function renderResultsByPhaseSubpanel(panel) {
   try {
     const matches = await getMatches();
     const rounds = Object.keys(ROUNDS);
@@ -130,7 +173,9 @@ async function renderAdminResultsTab() {
       </div>`;
 
     for (const round of rounds) {
-      const roundMatches = matches.filter(m => m.round === round);
+      const roundMatches = matches
+        .filter(m => m.round === round)
+        .sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
       if (!roundMatches.length) continue;
 
       html += `<details class="admin-round-details">
@@ -168,10 +213,10 @@ async function renderAdminResultsTab() {
       html += '</div></details>';
     }
 
-    container.innerHTML = html;
+    panel.innerHTML = html;
 
     // Recalculate all scores button
-    document.getElementById('btn-recalc-scores')?.addEventListener('click', async (e) => {
+    panel.querySelector('#btn-recalc-scores')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
       btn.disabled = true;
       btn.textContent = 'Recalculando…';
@@ -187,12 +232,12 @@ async function renderAdminResultsTab() {
     });
 
     // Bind form submits
-    container.querySelectorAll('.admin-result-form').forEach(form => {
+    panel.querySelectorAll('.admin-result-form').forEach(form => {
       form.addEventListener('submit', handleResultSubmit);
     });
 
   } catch (err) {
-    container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    panel.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -592,14 +637,12 @@ async function renderAdminUsersTab() {
 }
 
 // ============================================================
-// TOURNAMENT RESULTS
+// RESULTS SUB-PANELS
 // ============================================================
-async function renderAdminTournamentTab() {
-  const container = document.getElementById('admin-panel-tournament');
-  if (!container) return;
+async function renderResultsFinalSubpanel(panel) {
   try {
     const result = await getTournamentResult();
-    container.innerHTML = `
+    panel.innerHTML = `
       <h2>Resultado del Torneo</h2>
       <form id="tournament-result-form" class="admin-form">
         <div class="form-row"><div>
@@ -616,9 +659,9 @@ async function renderAdminTournamentTab() {
         <button type="submit" class="btn btn--gold">💾 Guardar Resultado del Torneo</button>
       </form>`;
 
-    bindFlagSelects(container);
+    bindFlagSelects(panel);
 
-    container.querySelector('#tournament-result-form').addEventListener('submit', async (e) => {
+    panel.querySelector('#tournament-result-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd  = new FormData(e.target);
       const btn = e.target.querySelector('[type="submit"]');
@@ -637,6 +680,74 @@ async function renderAdminTournamentTab() {
       }
     });
   } catch (err) {
-    container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+    panel.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function renderResultsClassificationSubpanel(panel) {
+  try {
+    const existingResults = await getGroupPositionResults();
+    const resultsByGroup  = Object.fromEntries(existingResults.map(r => [r.group_id, r]));
+    const teamsById       = Object.fromEntries(_teams.map(t => [t.id, t]));
+    const sortedGroups    = [..._groups].sort((a, b) => a.letter.localeCompare(b.letter));
+
+    function buildGroupCard(group) {
+      const teamIds   = group.group_teams.map(gt => gt.team_id);
+      const groupTeams = teamIds.map(id => teamsById[id]).filter(Boolean)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const saved = resultsByGroup[group.id];
+
+      function posSelect(pos, savedTeamId) {
+        return buildFlagSelect(`pos_${pos}_team_id`, groupTeams, savedTeamId ?? null);
+      }
+
+      return `
+        <div class="admin-classif-card">
+          <div class="admin-classif-card__title">Grupo ${escapeHtml(group.letter)}</div>
+          <form class="admin-classif-form" data-group-id="${group.id}">
+            <div class="admin-classif-positions">
+              <div class="admin-classif-pos"><span class="admin-classif-pos__label">🥇 1º</span>${posSelect(1, saved?.pos_1_team_id)}</div>
+              <div class="admin-classif-pos"><span class="admin-classif-pos__label">🥈 2º</span>${posSelect(2, saved?.pos_2_team_id)}</div>
+              <div class="admin-classif-pos"><span class="admin-classif-pos__label">🥉 3º</span>${posSelect(3, saved?.pos_3_team_id)}</div>
+              <div class="admin-classif-pos"><span class="admin-classif-pos__label">&nbsp;&nbsp;4º</span>${posSelect(4, saved?.pos_4_team_id)}</div>
+            </div>
+            <button type="submit" class="btn btn--sm btn--primary" style="margin-top:12px">💾 Guardar Grupo ${escapeHtml(group.letter)}</button>
+          </form>
+        </div>`;
+    }
+
+    panel.innerHTML = `
+      <div class="admin-results-header">
+        <h2>Clasificación Fase Regular</h2>
+        <p style="color:var(--clr-text-muted);font-size:0.85rem;margin:0">Certifica el orden final de cada grupo para calcular las predicciones de clasificación.</p>
+      </div>
+      <div class="admin-classif-grid">
+        ${sortedGroups.map(buildGroupCard).join('')}
+      </div>`;
+
+    bindFlagSelects(panel);
+
+    panel.querySelectorAll('.admin-classif-form').forEach(form => {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const groupId = parseInt(form.dataset.groupId, 10);
+        const fd = new FormData(form);
+        const positions = [1, 2, 3, 4].map(p => parseInt(fd.get(`pos_${p}_team_id`)) || null);
+        const btn = form.querySelector('[type="submit"]');
+        const origLabel = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+        try {
+          await upsertGroupPositionResult(groupId, positions);
+          const groupLetter = sortedGroups.find(g => g.id === groupId)?.letter ?? groupId;
+          showToast(`Clasificación Grupo ${groupLetter} guardada`, 'success');
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = origLabel; }
+        }
+      });
+    });
+  } catch (err) {
+    panel.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
   }
 }

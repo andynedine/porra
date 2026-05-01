@@ -255,9 +255,15 @@ function buildBreakdownTable(breakdown) {
     rows.push({ label: roundLabels[round] ?? round, pts, category: 'match' });
   }
 
-  // Group position bonus
-  if (breakdown.groupPositionPts > 0 || breakdown.groupPositionPts === 0) {
-    rows.push({ label: 'Posición en grupos', pts: breakdown.groupPositionPts, category: 'bonus' });
+  // Group classification points — one row per group with results
+  const groupRows = breakdown.groupPositionByGroup ?? [];
+  if (groupRows.length > 0) {
+    for (const g of groupRows) {
+      rows.push({ label: `Clasificación — Grupo ${g.group_letter}`, pts: g.points, category: 'bonus' });
+    }
+  } else if (breakdown.groupPositionPts != null) {
+    // Fallback: single aggregated row (no per-group data available)
+    rows.push({ label: 'Clasificación Fase Regular', pts: breakdown.groupPositionPts, category: 'bonus' });
   }
 
   // Tournament bonus
