@@ -215,6 +215,45 @@ export async function getMyScore(userId) {
   return data;
 }
 
+export async function getMyPointsBreakdown(userId) {
+  const [predsRes, tournamentRes, groupPosRes] = await Promise.all([
+    supabase
+      .from('predictions')
+      .select('points, match:match_id(round)')
+      .eq('user_id', userId)
+      .not('calculated_at', 'is', null),
+    supabase
+      .from('tournament_predictions')
+      .select('champion_points, runner_up_points, finalist_1_points, finalist_2_points, top_scorer_points')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabase
+      .from('group_position_predictions')
+      .select('points')
+      .eq('user_id', userId)
+      .not('calculated_at', 'is', null),
+  ]);
+  if (predsRes.error) throw predsRes.error;
+  if (tournamentRes.error) throw tournamentRes.error;
+  if (groupPosRes.error) throw groupPosRes.error;
+
+  // Sum predictions points by round
+  const byRound = {};
+  for (const p of predsRes.data ?? []) {
+    const round = p.match?.round ?? 'unknown';
+    byRound[round] = (byRound[round] ?? 0) + (p.points ?? 0);
+  }
+
+  // Sum group position points
+  const groupPositionPts = (groupPosRes.data ?? []).reduce((acc, g) => acc + (g.points ?? 0), 0);
+
+  return {
+    byRound,
+    groupPositionPts,
+    tournament: tournamentRes.data ?? null,
+  };
+}
+
 // ---- Achievements -------------------------------------------
 export async function getMyAchievements(userId) {
   const { data, error } = await supabase
@@ -332,7 +371,7 @@ export async function updateUserRole(userId, role) {
 // ---- ADMIN: Tournament results ------------------------------
 export async function upsertTournamentResult(resultData) {
   // Always work with id=1 (singleton)
-  const { existing } = await supabase.from('tournament_results').select('id').limit(1).single();
+  const { data: existing } = await supabase.from('tournament_results').select('id').limit(1).maybeSingle();
   const payload = { ...resultData, updated_at: new Date().toISOString() };
   if (existing?.id) payload.id = existing.id;
   const { data, error } = await supabase

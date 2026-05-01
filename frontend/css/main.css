@@ -592,6 +592,42 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .achievement-card__earned { font-size: 0.72rem; color: var(--clr-green); margin-top: 6px; font-weight: 600; }
 .achievement-card__progress { font-size: 0.7rem; color: var(--clr-text-muted); margin-top: 6px; }
 
+/* ---- Points Breakdown Table ------------------------------ */
+.breakdown-table {
+  width: 100%;
+  max-width: 560px;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+  font-size: 0.9rem;
+}
+.breakdown-table th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--clr-bg-2);
+  color: var(--clr-text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--clr-border);
+}
+.breakdown-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--clr-border);
+  color: var(--clr-text);
+}
+.breakdown-pts { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.breakdown-pts--pos { color: var(--clr-gold); font-weight: 700; }
+.breakdown-row--bonus td:first-child  { color: var(--clr-text-muted); }
+.breakdown-row--tournament td:first-child { color: #b0d4ff; }
+.breakdown-total td {
+  border-top: 2px solid var(--clr-gold);
+  border-bottom: none;
+  font-size: 1rem;
+  color: var(--clr-gold);
+  padding-top: 10px;
+}
+
 /* ---- Tournament Predictions ------------------------------ */
 .tournament-preds { margin-bottom: 0; }
 .tournament-preds__header {

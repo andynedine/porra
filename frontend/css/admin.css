@@ -34,18 +34,16 @@
 /* ---- Admin Tabs ------------------------------------------ */
 .admin-tabs {
   display: flex;
-  overflow-x: auto;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 0;
   background: var(--clr-bg-1);
   border-bottom: 1px solid var(--clr-border);
-  padding: 0 16px;
-  scrollbar-width: none;
+  padding: 0 8px;
   margin-bottom: 24px;
 }
-.admin-tabs::-webkit-scrollbar { display: none; }
 .admin-tab {
-  padding: 14px 18px;
-  font-size: 0.85rem;
+  padding: 12px 14px;
+  font-size: 0.82rem;
   font-weight: 600;
   border: none;
   background: transparent;
@@ -189,10 +187,14 @@
   color: var(--clr-text-muted);
 }
 .admin-result-form {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+}
+.admin-result-form .team-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .admin-score {
   width: 56px !important;
@@ -249,7 +251,19 @@
 .admin-round-summary::-webkit-details-marker { display: none; }
 .admin-round-summary::before { content: '▶'; font-size: 0.7rem; transition: transform 0.2s; }
 details[open] .admin-round-summary::before { transform: rotate(90deg); }
-.admin-matches-list { padding: 16px; }
+.admin-matches-list {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .admin-matches-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-match-row { margin-bottom: 0; }
+}
 
 /* ---- Admin Form ------------------------------------------ */
 .admin-form {

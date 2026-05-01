@@ -133,7 +133,7 @@ async function renderAdminResultsTab() {
       const roundMatches = matches.filter(m => m.round === round);
       if (!roundMatches.length) continue;
 
-      html += `<details class="admin-round-details" open>
+      html += `<details class="admin-round-details">
         <summary class="admin-round-summary">${escapeHtml(roundLabel(round))} (${roundMatches.length} partidos)</summary>
         <div class="admin-matches-list">`;
 
@@ -235,8 +235,7 @@ async function renderAdminMatchesTab() {
   try {
     const matches = await getMatches();
 
-    // Sort: group phase → by group letter A→L then by date asc
-    //       other phases → keep round order, then by date asc
+    // Sort by round order then by date
     const ROUND_ORDER = Object.fromEntries(
       Object.entries(ROUNDS).map(([k, v]) => [k, v.order])
     );
@@ -252,100 +251,51 @@ async function renderAdminMatchesTab() {
       return new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0);
     });
 
-    // Distinct group letters for the group filter
-    const groupLetters = [...new Set(
-      matches.filter(m => m.round === 'group' && m.group?.letter)
-             .map(m => m.group.letter)
-    )].sort();
-
-    // Round options for the phase filter
-    const roundOptions = Object.entries(ROUNDS)
-      .sort((a, b) => a[1].order - b[1].order)
-      .map(([k, v]) => `<option value="${k}">${escapeHtml(v.label)}</option>`)
-      .join('');
-
-    container.innerHTML = `
-      <h2>Gestión de Partidos</h2>
-      <div class="admin-matches-filters">
-        <label class="admin-filter-label">Fase
-          <select id="filter-round">
-            <option value="">— Todas —</option>
-            ${roundOptions}
-          </select>
-        </label>
-        <label class="admin-filter-label" id="filter-group-wrap" style="display:none">Grupo
-          <select id="filter-group">
-            <option value="">— Todos —</option>
-            ${groupLetters.map(l => `<option value="${l}">Grupo ${escapeHtml(l)}</option>`).join('')}
-          </select>
-        </label>
-      </div>
-      <table class="admin-table" id="matches-admin-table">
-        <thead>
-          <tr><th>ID</th><th>Ronda</th><th>Grupo</th><th>Local</th><th>Visitante</th><th>Fecha</th><th>Estadio</th><th>Acción</th></tr>
-        </thead>
-        <tbody id="matches-admin-tbody"></tbody>
-      </table>`;
-
-    // --- render rows helper ---
-    function renderRows(roundFilter, groupFilter) {
-      const tbody = container.querySelector('#matches-admin-tbody');
-      const visible = matches.filter(m => {
-        if (roundFilter && m.round !== roundFilter) return false;
-        if (groupFilter && m.group?.letter !== groupFilter) return false;
-        return true;
-      });
-      if (!visible.length) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--clr-text-muted)">Sin partidos</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = visible.map(m => {
-        const homeTeam = m.home_team ? `${flagImg(m.home_team)} ${escapeHtml(m.home_team.name)}` : 'TBD';
-        const awayTeam = m.away_team ? `${flagImg(m.away_team)} ${escapeHtml(m.away_team.name)}` : 'TBD';
-        return `
-          <tr>
-            <td>${m.id}</td>
-            <td>${escapeHtml(roundLabel(m.round))}</td>
-            <td>${m.group ? 'Grupo ' + m.group.letter : '—'}</td>
-            <td>${homeTeam}</td>
-            <td>${awayTeam}</td>
-            <td>${formatDate(m.match_datetime)}</td>
-            <td>${escapeHtml(m.venue ?? '—')}</td>
-            <td>
-              <button class="btn btn--xs btn--outline edit-match-btn"
-                data-id="${m.id}"
-                data-round="${m.round}"
-                data-group-id="${m.group_id ?? ''}"
-                data-home="${m.home_team_id ?? ''}"
-                data-away="${m.away_team_id ?? ''}"
-                data-dt="${m.match_datetime ?? ''}"
-                data-venue="${escapeHtml(m.venue ?? '')}">
-                ✏️ Editar
-              </button>
-            </td>
-          </tr>`;
-      }).join('');
-
-      // Re-bind edit buttons
-      bindEditButtons();
+    // Group matches by round, preserving round order
+    const matchesByRound = {};
+    for (const round of Object.keys(ROUNDS)) {
+      const rms = matches.filter(m => m.round === round);
+      if (rms.length) matchesByRound[round] = rms;
     }
 
-    // --- filter wiring ---
-    const filterRound = container.querySelector('#filter-round');
-    const filterGroup = container.querySelector('#filter-group');
-    const filterGroupWrap = container.querySelector('#filter-group-wrap');
+    function matchRow(m) {
+      const homeTeam = m.home_team ? `${flagImg(m.home_team)} ${escapeHtml(m.home_team.name)}` : 'TBD';
+      const awayTeam = m.away_team ? `${flagImg(m.away_team)} ${escapeHtml(m.away_team.name)}` : 'TBD';
+      return `
+        <tr>
+          <td>${m.id}</td>
+          <td>${m.group ? 'Grupo ' + escapeHtml(m.group.letter) : '—'}</td>
+          <td>${homeTeam}</td>
+          <td>${awayTeam}</td>
+          <td>${formatDate(m.match_datetime)}</td>
+          <td>
+            <button class="btn btn--xs btn--outline edit-match-btn"
+              data-id="${m.id}"
+              data-round="${m.round}"
+              data-group-id="${m.group_id ?? ''}"
+              data-home="${m.home_team_id ?? ''}"
+              data-away="${m.away_team_id ?? ''}"
+              data-dt="${m.match_datetime ?? ''}">
+              ✏️ Editar
+            </button>
+          </td>
+        </tr>`;
+    }
 
-    filterRound.addEventListener('change', () => {
-      const isGroup = filterRound.value === 'group';
-      filterGroupWrap.style.display = isGroup ? '' : 'none';
-      if (!isGroup) filterGroup.value = '';
-      renderRows(filterRound.value, '');
-    });
-    filterGroup.addEventListener('change', () => {
-      renderRows(filterRound.value, filterGroup.value);
-    });
-
-    renderRows('', '');
+    let html = '<h2>Gestión de Partidos</h2>';
+    for (const [round, rms] of Object.entries(matchesByRound)) {
+      html += `
+        <details class="admin-round-details">
+          <summary class="admin-round-summary">${escapeHtml(roundLabel(round))} (${rms.length} partidos)</summary>
+          <div style="overflow-x:auto;padding:0 16px 16px">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Grupo</th><th>Local</th><th>Visitante</th><th>Fecha</th><th>Acción</th></tr></thead>
+              <tbody>${rms.map(matchRow).join('')}</tbody>
+            </table>
+          </div>
+        </details>`;
+    }
+    container.innerHTML = html;
 
     // --- modal ---
     let modal = document.getElementById('match-edit-modal');
@@ -386,9 +336,6 @@ async function renderAdminMatchesTab() {
                 <label>Fecha/Hora (UTC)
                   <input type="datetime-local" name="match_datetime" value="${escapeHtml(dtLocal)}">
                 </label>
-                <label>Estadio
-                  <input type="text" name="venue" maxlength="100" value="${escapeHtml(btn.dataset.venue)}">
-                </label>
               </div>
               <div class="form-row">
                 <button type="submit" class="btn btn--primary">💾 Guardar</button>
@@ -416,7 +363,6 @@ async function renderAdminMatchesTab() {
                 home_team_id:   parseInt(fd.get('home_team_id')) || null,
                 away_team_id:   parseInt(fd.get('away_team_id')) || null,
                 match_datetime: fd.get('match_datetime') ? fd.get('match_datetime').replace('T', ' ') + ':00+00' : null,
-                venue:          fd.get('venue') || null,
               });
               showToast('Partido actualizado', 'success');
               closeModal();
@@ -429,6 +375,8 @@ async function renderAdminMatchesTab() {
         });
       });
     }
+
+    bindEditButtons();
 
   } catch (err) {
     container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
@@ -468,7 +416,7 @@ async function renderAdminDeadlinesTab() {
       try {
         for (const round of rounds) {
           const val = fd.get(round);
-          if (val) await upsertDeadline(round, val.replace('T', ' ') + ':00+00');
+          if (val) await upsertDeadline(round, val + ':00+00:00'); // proper ISO 8601 with T and +00:00
         }
         showToast('Fechas límite actualizadas', 'success');
       } catch (err) {
@@ -649,40 +597,26 @@ async function renderAdminUsersTab() {
 async function renderAdminTournamentTab() {
   const container = document.getElementById('admin-panel-tournament');
   if (!container) return;
-  const teamOptions = _teams.map(t => `<option value="${t.id}">${escapeHtml(t.flag)} ${escapeHtml(t.name)}</option>`).join('');
   try {
     const result = await getTournamentResult();
     container.innerHTML = `
       <h2>Resultado del Torneo</h2>
       <form id="tournament-result-form" class="admin-form">
-        <div class="form-row">
-          <label>🥇 Campeón
-            <select name="champion_team_id"><option value="">—</option>${teamOptions}</select>
-          </label>
-          <label>🥈 Subcampeón
-            <select name="runner_up_team_id"><option value="">—</option>${teamOptions}</select>
-          </label>
-          <label>🥉 Tercer Puesto
-            <select name="third_place_team_id"><option value="">—</option>${teamOptions}</select>
-          </label>
+        <div class="form-row"><div>
+          <label>🥇 Campeón</label>
+          ${buildFlagSelect('champion_team_id', _teams, result?.champion_team_id ?? null)}
+          </div><div><label>🥈 Subcampeón</label>
+          ${buildFlagSelect('runner_up_team_id', _teams, result?.runner_up_team_id ?? null)}
         </div>
         <div class="form-row">
           <label>⚽ Máximo Goleador
             <input type="text" name="top_scorer_name" maxlength="100" value="${escapeHtml(result?.top_scorer_name ?? '')}">
           </label>
-          <label>Goles
-            <input type="number" name="top_scorer_goals" min="0" max="99" value="${result?.top_scorer_goals ?? ''}">
-          </label>
         </div>
         <button type="submit" class="btn btn--gold">💾 Guardar Resultado del Torneo</button>
       </form>`;
 
-    // Pre-select existing values
-    if (result) {
-      container.querySelector('[name="champion_team_id"]').value    = result.champion_team_id    ?? '';
-      container.querySelector('[name="runner_up_team_id"]').value   = result.runner_up_team_id   ?? '';
-      container.querySelector('[name="third_place_team_id"]').value = result.third_place_team_id ?? '';
-    }
+    bindFlagSelects(container);
 
     container.querySelector('#tournament-result-form').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -691,13 +625,11 @@ async function renderAdminTournamentTab() {
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
       try {
         await upsertTournamentResult({
-          champion_team_id:    parseInt(fd.get('champion_team_id'))    || null,
-          runner_up_team_id:   parseInt(fd.get('runner_up_team_id'))   || null,
-          third_place_team_id: parseInt(fd.get('third_place_team_id')) || null,
-          top_scorer_name:     fd.get('top_scorer_name')               || null,
-          top_scorer_goals:    parseInt(fd.get('top_scorer_goals'))    || null,
+          champion_team_id:  parseInt(fd.get('champion_team_id'))  || null,
+          runner_up_team_id: parseInt(fd.get('runner_up_team_id')) || null,
+          top_scorer_name:   fd.get('top_scorer_name')             || null,
         });
-        showToast('Resultado del torneo guardado', 'success');
+        showToast('Resultado del torneo guardado — puntuaciones de torneo actualizadas automáticamente', 'success');
       } catch (err) {
         showToast('Error: ' + err.message, 'error');
       } finally {

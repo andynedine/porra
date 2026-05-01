@@ -19,9 +19,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 export const ROUNDS = {
   group:          { label: 'Fase de Grupos',         order: 1 },
-  dieciseisavos:  { label: 'Dieciseisavos de Final',  order: 2 },
-  octavos:        { label: 'Octavos de Final',        order: 3 },
-  cuartos:        { label: 'Cuartos de Final',        order: 4 },
+  dieciseisavos:  { label: 'Dieciseisavos',  order: 2 },
+  octavos:        { label: 'Octavos',        order: 3 },
+  cuartos:        { label: 'Cuartos',        order: 4 },
   semis:          { label: 'Semifinales',             order: 5 },
   tercero:        { label: 'Tercer y 4º Puesto',      order: 6 },
   final:          { label: 'Gran Final',              order: 7 },

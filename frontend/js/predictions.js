@@ -46,6 +46,9 @@ async function renderPredictionsUI(container) {
   const predMap = {};
   for (const p of myPreds) predMap[p.match_id] = p;
 
+  // Sort matches by date ascending within each round
+  matches.sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
+
   // Build round tabs
   const roundOrder = Object.keys(ROUNDS);
   const matchesByRound = groupBy(matches, 'round');

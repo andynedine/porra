@@ -4,6 +4,7 @@
 import {
   getGlobalRanking, getRoundRanking, getMyScore,
   getMyAchievements, getAllAchievements, subscribeToScores, unsubscribeFromScores,
+  getMyPointsBreakdown,
 } from './api.js';
 import { escapeHtml, fmtPts, initials, roundLabel } from './utils.js';
 import { ROUNDS } from './config.js';
@@ -161,18 +162,19 @@ export async function initStats(user) {
   el.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando estadísticas…</div>';
 
   try {
-    const [score, achievements, allAchievements] = await Promise.all([
+    const [score, achievements, allAchievements, breakdown] = await Promise.all([
       getMyScore(user.id),
       getMyAchievements(user.id),
       getAllAchievements(),
+      getMyPointsBreakdown(user.id),
     ]);
-    renderStats(el, score, achievements, allAchievements);
+    renderStats(el, score, achievements, allAchievements, breakdown);
   } catch (err) {
     el.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
   }
 }
 
-function renderStats(container, score, myAchievements, allAchievements) {
+function renderStats(container, score, myAchievements, allAchievements, breakdown) {
   const s = score ?? {};
   const earnedIds = new Set(myAchievements.map(a => a.achievement_id));
 
@@ -210,6 +212,8 @@ function renderStats(container, score, myAchievements, allAchievements) {
       <canvas id="stats-donut" width="300" height="300" aria-label="Distribución de aciertos"></canvas>
     </div>
 
+    ${buildBreakdownTable(breakdown)}
+
     <h3 class="section-title">🏅 Logros</h3>
     <div class="achievements-grid">
       ${allAchievements.map(a => `
@@ -226,6 +230,80 @@ function renderStats(container, score, myAchievements, allAchievements) {
   if (window.Chart) {
     drawDonutChart(s.exact_count ?? 0, s.partial_count ?? 0, s.wrong_count ?? 0);
   }
+}
+
+function buildBreakdownTable(breakdown) {
+  if (!breakdown) return '';
+
+  const roundOrder = ['group', 'dieciseisavos', 'octavos', 'cuartos', 'semis', 'tercero', 'final'];
+  const roundLabels = {
+    group:         'Fase de Grupos',
+    dieciseisavos: 'Dieciseisavos',
+    octavos:       'Octavos',
+    cuartos:       'Cuartos',
+    semis:         'Semifinales',
+    tercero:       'Tercer y 4º Puesto',
+    final:         'Gran Final',
+  };
+
+  const rows = [];
+
+  // Match points per round
+  for (const round of roundOrder) {
+    const pts = breakdown.byRound[round];
+    if (pts === undefined) continue;
+    rows.push({ label: roundLabels[round] ?? round, pts, category: 'match' });
+  }
+
+  // Group position bonus
+  if (breakdown.groupPositionPts > 0 || breakdown.groupPositionPts === 0) {
+    rows.push({ label: 'Posición en grupos', pts: breakdown.groupPositionPts, category: 'bonus' });
+  }
+
+  // Tournament bonus
+  const t = breakdown.tournament;
+  if (t) {
+    const champPts   = (t.champion_points   ?? 0);
+    const fin1Pts    = (t.finalist_1_points ?? 0);
+    const fin2Pts    = (t.finalist_2_points ?? 0);
+    const scorerPts  = (t.top_scorer_points ?? 0);
+    const totalBonus = champPts + fin1Pts + fin2Pts + scorerPts;
+
+    if (champPts  > 0) rows.push({ label: 'Torneo — Campeón acertado',           pts: champPts,  category: 'tournament' });
+    if (fin1Pts   > 0) rows.push({ label: 'Torneo — Finalista A en la final',     pts: fin1Pts,   category: 'tournament' });
+    if (fin2Pts   > 0) rows.push({ label: 'Torneo — Finalista B en la final',     pts: fin2Pts,   category: 'tournament' });
+    if (scorerPts > 0) rows.push({ label: 'Torneo — Máximo goleador acertado',    pts: scorerPts, category: 'tournament' });
+    if (totalBonus === 0 && t) {
+      rows.push({ label: 'Torneo (bonus pendiente / sin aciertos)', pts: 0, category: 'tournament' });
+    }
+  }
+
+  if (!rows.length) return '';
+
+  const total = rows.reduce((acc, r) => acc + r.pts, 0);
+
+  const categoryIcon = { match: '⚽', bonus: '📋', tournament: '🏆' };
+
+  return `
+    <h3 class="section-title">📈 Desglose de Puntos</h3>
+    <table class="breakdown-table">
+      <thead>
+        <tr><th>Concepto</th><th class="breakdown-pts">Puntos</th></tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr class="breakdown-row breakdown-row--${r.category}">
+            <td>${categoryIcon[r.category] ?? ''} ${escapeHtml(r.label)}</td>
+            <td class="breakdown-pts ${r.pts > 0 ? 'breakdown-pts--pos' : ''}">${fmtPts(r.pts)}</td>
+          </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr class="breakdown-total">
+          <td><strong>TOTAL</strong></td>
+          <td class="breakdown-pts"><strong>${fmtPts(total)}</strong></td>
+        </tr>
+      </tfoot>
+    </table>`;
 }
 
 function drawDonutChart(exact, partial, wrong) {

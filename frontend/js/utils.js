@@ -41,7 +41,14 @@ export function formatDate(dt, opts = {}) {
 /** Returns true if the given ISO string deadline has already passed */
 export function deadlinePassed(deadlineISO) {
   if (!deadlineISO) return false;
-  return new Date(deadlineISO) < new Date();
+  // Supabase may return timestamps with a space instead of 'T' and '+00' without colon,
+  // which is not standard ISO 8601 and causes Invalid Date in some browsers.
+  const iso = String(deadlineISO)
+    .replace(' ', 'T')          // '2026-05-30 21:00' → '2026-05-30T21:00'
+    .replace(/\+00$/, '+00:00'); // '+00' → '+00:00'
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false; // safety: unparseable → treat as not passed
+  return d < new Date();
 }
 
 /** Get human-readable round label */
