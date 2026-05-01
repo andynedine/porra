@@ -403,6 +403,60 @@ export async function updateUserRole(userId, role) {
   if (error) throw error;
 }
 
+/**
+ * Returns every user's tournament prediction (champion, finalists, top scorer).
+ * RLS enforces this only returns data once the 'tournament' deadline has passed.
+ */
+export async function getAllTournamentPredictions() {
+  const { data, error } = await supabase
+    .from('tournament_predictions')
+    .select(`
+      user_id,
+      champion_team_id, champion_points,
+      runner_up_team_id, runner_up_points,
+      finalist_2_team_id, finalist_1_points, finalist_2_points,
+      top_scorer_name, top_scorer_team_id, top_scorer_points,
+      calculated_at,
+      user:user_id(id, username)
+    `);
+  if (error) throw error;
+  return data ?? [];
+}
+
+// ---- Public: all users' predictions (read after deadline) --
+
+/**
+ * Returns every prediction for a given round from all users.
+ * RLS enforces this only returns data once the round deadline has passed.
+ */
+export async function getAllPredictionsForRound(round) {
+  const { data: matchData, error: matchErr } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('round', round);
+  if (matchErr) throw matchErr;
+  if (!matchData?.length) return [];
+
+  const { data, error } = await supabase
+    .from('predictions')
+    .select('user_id, match_id, home_score, away_score, points, is_exact, is_partial, calculated_at, user:user_id(id, username)')
+    .in('match_id', matchData.map(m => m.id));
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Returns every user's group-classification predictions.
+ * RLS enforces this only returns data once the 'group' deadline has passed.
+ */
+export async function getAllGroupPositionPredictionsAll() {
+  const { data, error } = await supabase
+    .from('group_position_predictions')
+    .select('user_id, group_id, pos_1_team_id, pos_2_team_id, pos_3_team_id, pos_4_team_id, points, calculated_at, user:user_id(id, username)');
+  if (error) throw error;
+  return data ?? [];
+}
+
 // ---- ADMIN: Tournament results ------------------------------
 export async function upsertTournamentResult(resultData) {
   // Always work with id=1 (singleton)

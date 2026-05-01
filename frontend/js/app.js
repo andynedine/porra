@@ -7,6 +7,7 @@ import { getSession, getCurrentUser, getProfile, logout, onAuthChange,
 import { showToast, requireAuth, redirectIfAuth, escapeHtml, initials } from './utils.js';
 import { initPredictions } from './predictions.js';
 import { initRanking, initStats } from './ranking.js';
+import { initCompare } from './compare.js';
 import { getMatches, getStandings, getGroups, subscribeToMatchResults } from './api.js';
 import { formatDate, roundLabel, groupBy, fmtPts, flagImg } from './utils.js';
 
@@ -84,6 +85,7 @@ async function initDashboardPage(session) {
     predicciones:  () => initPredictions(user),
     clasificacion: () => initRanking(user),
     estadisticas:  () => initStats(user),
+    comparar:      () => initCompare(user),
     perfil:        () => initProfileTab(profile, user),
   };
 
