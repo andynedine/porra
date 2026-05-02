@@ -86,6 +86,7 @@ async function initDashboardPage(session) {
     clasificacion: () => initRanking(user),
     estadisticas:  () => initStats(user),
     comparar:      () => initCompare(user),
+    normas:        () => {}, // static HTML — nothing to init
     perfil:        () => initProfileTab(profile, user),
   };
 

@@ -56,6 +56,10 @@
       aria-selected="false" aria-controls="panel-comparar">
       👁 Ver todos
     </button>
+    <button class="dash-tab" role="tab" data-tab="normas"
+      aria-selected="false" aria-controls="panel-normas">
+      📋 Normas
+    </button>
     <button class="dash-tab" role="tab" data-tab="perfil"
       aria-selected="false" aria-controls="panel-perfil"
       hidden></button>
@@ -93,6 +97,124 @@
     <!-- COMPARAR -->
     <section id="panel-comparar" class="dash-panel hidden" role="tabpanel" aria-labelledby="tab-comparar">
       <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- NORMAS Y FUNCIONAMIENTO -->
+    <section id="panel-normas" class="dash-panel hidden normas-panel" role="tabpanel" aria-labelledby="tab-normas">
+
+      <div class="normas-container">
+        <h1 class="normas-title">📋 Normas y Funcionamiento</h1>
+
+        <!-- A. REGLAS -->
+        <div class="normas-block">
+          <h2 class="normas-block__heading">A. Reglas</h2>
+          <ol class="normas-list">
+            <li>Cada participante, ya sea de forma individual o de forma grupal, deberá abonar una cantidad determinada (aun por fijar). Hasta que no se reciba esa cantidad el administrador no activirá de forma definitiva el alta realizado por el usuario en la web.</li>
+            <li>Debido a que puede haber participantes de fuera de la ciudad, el dinero deberá ser entregado <strong>antes de la finalización de la primera fase de grupos</strong>. En caso contrario será anulada su participación.</li>
+            <li>Según sea el número total de participantes, se dividirá el premio en otros de menor cuantía. De esta forma podría haber «Acertantes de 1er premio», «Acertantes de 2º premio», etc.</li>
+            <li>Cada participante rellenará en su porra privada los resultados de cada fase <strong>dentro del tiempo límite</strong>.</li>
+            <li>Una vez finalizado el tiempo límite, el usuario no podrá meter ningún resultado en esa fase abierta. Tras la finalización de esa fecha límite ya serán visibles los resultados del resto de participantes.</li>
+            <li>Los participantes deberán comprobar que tanto sus resultados privados como los puestos ya públicamente coinciden. En caso de cualquier irregularidad, deben contactar con la administración cuanto antes.</li>
+            <li>A medida que acaben las distintas fases del Mundial, se enviará una notificación por correo/WhatsApp indicando la fecha límite para rellenar la siguiente fase, repitiéndose los puntos 4, 5 y 6.</li>
+            <li>Conforme se actualicen los resultados de la porra pública, en los apartados correspondientes se mostrarán las puntuaciones obtenidas, así como la clasificación general y demás estadísticas actualizadas.</li>
+            <li>Con cualquier incidencia en el sistema de puntuación, por favor contactad lo antes posible vía email o WhatsApp con la administración de la porra.</li>
+          </ol>
+        </div>
+
+        <!-- B. PUNTUACIÓN -->
+        <div class="normas-block">
+          <h2 class="normas-block__heading">B. ¿Cómo conseguir puntos?</h2>
+
+          <div class="normas-scoring-grid">
+
+            <!-- Fase de grupos -->
+            <div class="normas-scoring-card">
+              <h3 class="normas-scoring-card__title">⚽ Fase de grupos</h3>
+              <ul class="normas-scoring-card__list">
+                <li><span class="pts pts--exact">+2 pts</span> Resultado exacto</li>
+                <li><span class="pts pts--partial">+1 pt</span> Ganador/empate correcto (sin marcador exacto)</li>
+                <li><span class="pts pts--miss">0 pts</span> Fallo</li>
+                <li><span class="pts pts--partial">+0,5 pts</span> Por cada equipo en su posición de grupo correcta</li>
+                <li class="normas-scoring-card__note">✨ Bonus: si aciertas <strong>todas</strong> las posiciones de un grupo recibes <strong>+1 pt extra</strong> (total 3 pts en lugar de 2)</li>
+              </ul>
+            </div>
+
+            <!-- Dieciseisavos y Octavos -->
+            <div class="normas-scoring-card">
+              <h3 class="normas-scoring-card__title">⚽ Dieciseisavos y Octavos de Final</h3>
+              <p class="normas-scoring-card__note">El resultado se toma al finalizar los primeros 90' reglamentarios (no se cuenta prórroga/penaltis).</p>
+              <ul class="normas-scoring-card__list">
+                <li><span class="pts pts--exact">+2,5 pts</span> Resultado exacto</li>
+                <li><span class="pts pts--partial">+1,5 pts</span> Ganador correcto (sin marcador exacto)</li>
+                <li><span class="pts pts--miss">0 pts</span> Fallo</li>
+              </ul>
+            </div>
+
+            <!-- Cuartos y Semis -->
+            <div class="normas-scoring-card">
+              <h3 class="normas-scoring-card__title">⚽ Cuartos de Final y Semifinales</h3>
+              <p class="normas-scoring-card__note">El resultado se toma al finalizar los primeros 90' reglamentarios (no se cuenta prórroga/penaltis).</p>
+              <ul class="normas-scoring-card__list">
+                <li><span class="pts pts--exact">+3 pts</span> Resultado exacto</li>
+                <li><span class="pts pts--partial">+1,5 pts</span> Ganador correcto (sin marcador exacto)</li>
+                <li><span class="pts pts--miss">0 pts</span> Fallo</li>
+              </ul>
+            </div>
+
+            <!-- 3º/4º y Final -->
+            <div class="normas-scoring-card">
+              <h3 class="normas-scoring-card__title">🏆 3er/4º Puesto y Gran Final</h3>
+              <p class="normas-scoring-card__note">El resultado se toma al finalizar los primeros 90' reglamentarios (no se cuenta prórroga/penaltis).</p>
+              <ul class="normas-scoring-card__list">
+                <li><span class="pts pts--exact">+4 pts</span> Resultado exacto</li>
+                <li><span class="pts pts--partial">+2 pts</span> Ganador correcto (sin marcador exacto)</li>
+                <li><span class="pts pts--miss">0 pts</span> Fallo</li>
+                <li><span class="pts pts--exact">+3 pts</span> Por cada finalista acertado</li>
+                <li><span class="pts pts--exact">+10 pts</span> Por acertar al Campeón del Mundial</li>
+              </ul>
+            </div>
+
+            <!-- Pichichi -->
+            <div class="normas-scoring-card">
+              <h3 class="normas-scoring-card__title">🥇 Pichichi</h3>
+              <ul class="normas-scoring-card__list">
+                <li><span class="pts pts--exact">+10 pts</span> Por acertar al máximo goleador del torneo</li>
+              </ul>
+            </div>
+
+          </div><!-- /scoring-grid -->
+        </div>
+
+        <!-- C. QUIÉN GANA -->
+        <div class="normas-block">
+          <h2 class="normas-block__heading">C. ¿Quién gana?</h2>
+          <ol class="normas-list">
+            <li>Ganará el participante que obtenga <strong>más puntos</strong> al final del Mundial, llevándose todo el bote acumulado.</li>
+            <li>En caso de empate entre dos o más participantes, se seguirá el siguiente orden para desempatar:
+              <ol class="normas-list normas-list--alpha">
+                <li>Quien más resultados exactos haya acertado.</li>
+                <li>Quien más estados finales haya acertado.</li>
+                <li>Quien haya acertado el vencedor de la final.</li>
+                <li>Quien acierte más equipos en la final del Mundial.</li>
+                <li>Quien acierte más posiciones de equipos en la clasificación de grupos.</li>
+                <li>Quien acierte al Pichichi del torneo.</li>
+              </ol>
+            </li>
+            <li>Si aun así sigue habiendo empate, se procederá al reparto del premio.</li>
+          </ol>
+        </div>
+
+        <!-- D. APUNTES DEL ADMINISTRADOR -->
+        <div class="normas-block normas-block--admin">
+          <h2 class="normas-block__heading">D. Apuntes del Administrador</h2>
+          <ol class="normas-list">
+            <li>La administración de la porra se reserva el derecho a modificar alguna regla o reparto de premios conforme transcurra la porra, de forma que esto <strong>no perjudique directamente</strong> sobre ningún participante.</li>
+            <li>De producirse, dichos posibles cambios serán de forma general, para y por el bien de un correcto funcionamiento de la porra.</li>
+            <li>Cada cambio en las normas o funcionamiento de la porra será comunicado a cada participante.</li>
+          </ol>
+        </div>
+
+      </div><!-- /normas-container -->
     </section>
 
     <!-- PERFIL -->

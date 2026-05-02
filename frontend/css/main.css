@@ -105,6 +105,11 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 }
 .app-header__logo-img {
   height: 2rem;
+}
+.app-header__logo-img_g {
+  height: 4rem;
+}
+.app-header__logo-img,.app-header__logo-img_g {
   width: auto;
   display: block;
   flex-shrink: 0;

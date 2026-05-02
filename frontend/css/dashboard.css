@@ -130,3 +130,125 @@
   /* Group section */
   .group-section { padding: 12px; }
 }
+
+/* =============================================================
+   NORMAS Y FUNCIONAMIENTO
+   ============================================================= */
+.normas-panel { padding: 0; }
+
+.normas-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.normas-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--clr-border);
+}
+
+/* ---- Block (A / B / C / D) ---- */
+.normas-block {
+  margin-bottom: 2.5rem;
+}
+
+.normas-block__heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--clr-accent);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.normas-block--admin .normas-block__heading {
+  color: var(--clr-gold);
+}
+
+/* ---- Ordered/Unordered lists ---- */
+.normas-list {
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--clr-text);
+  line-height: 1.6;
+}
+
+.normas-list li { padding-left: 0.25rem; }
+.normas-list li strong { color: var(--clr-text); }
+.normas-list--alpha { list-style-type: lower-alpha; margin-top: 0.5rem; }
+
+/* ---- Scoring grid ---- */
+.normas-scoring-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.normas-scoring-card {
+  background: var(--clr-bg-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.normas-scoring-card--highlight {
+  border-color: var(--clr-gold);
+  background: linear-gradient(135deg, var(--clr-bg-2), rgba(255,215,0,0.06));
+}
+
+.normas-scoring-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 0.6rem;
+}
+
+.normas-scoring-card__note {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+
+.normas-scoring-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--clr-text);
+}
+
+.normas-scoring-card__list .normas-scoring-card__note {
+  margin: 0.3rem 0 0;
+}
+
+/* ---- Point badges ---- */
+.pts {
+  display: inline-block;
+  min-width: 4rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-align: right;
+  margin-right: 0.5rem;
+}
+.pts--exact   { color: var(--clr-exact); }
+.pts--partial { color: var(--clr-partial); }
+.pts--miss    { color: var(--clr-miss); }
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .normas-scoring-grid { grid-template-columns: 1fr; }
+  .normas-container { padding: 1.25rem 1rem 3rem; }
+  .normas-title { font-size: 1.3rem; }
+}
