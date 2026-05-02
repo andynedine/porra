@@ -6,7 +6,7 @@ import {
   upsertMatchResult, upsertMatch,
   getDeadlines, upsertDeadline,
   getAllUserPredictions, adminUpdatePrediction,
-  getChangeLogs, getAllUsers, updateUserRole, updateUserAdmitido,
+  getAllUsers, updateUserRole, updateUserAdmitido,
   getTournamentResult, upsertTournamentResult,
   getGroupPositionResults, upsertGroupPositionResult,
   getStandings, adminRecalculateAllScores,
@@ -106,7 +106,6 @@ async function loadAdminPanel(panel) {
     case 'matches':    await renderAdminMatchesTab(); break;
     case 'deadlines':  await renderAdminDeadlinesTab(); break;
     case 'predictions':await renderAdminPredictionsTab(); break;
-    case 'logs':       await renderAdminLogsTab(); break;
     case 'users':      await renderAdminUsersTab(); break;
   }
 }
@@ -550,42 +549,6 @@ async function renderAdminPredictionsTab() {
 }
 
 // ============================================================
-// CHANGE LOGS
-// ============================================================
-async function renderAdminLogsTab() {
-  const container = document.getElementById('admin-panel-logs');
-  if (!container) return;
-  container.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
-  try {
-    const logs = await getChangeLogs(200);
-    if (!logs.length) { container.innerHTML = '<div class="empty">Sin cambios registrados</div>'; return; }
-    container.innerHTML = `
-      <h2>Historial de Cambios</h2>
-      <table class="admin-table admin-table--compact">
-        <thead><tr><th>Fecha</th><th>Usuario</th><th>Tabla</th><th>Registro</th><th>Acción</th><th>Detalle</th></tr></thead>
-        <tbody>
-          ${logs.map(l => `
-            <tr>
-              <td>${formatDate(l.created_at)}</td>
-              <td>${escapeHtml(l.user?.username ?? l.changed_by ?? 'Sistema')}</td>
-              <td>${escapeHtml(l.table_name)}</td>
-              <td>${escapeHtml(l.record_id)}</td>
-              <td><span class="badge badge--${l.action.toLowerCase()}">${escapeHtml(l.action)}</span></td>
-              <td>
-                <details>
-                  <summary>Ver</summary>
-                  <pre class="log-json">${escapeHtml(JSON.stringify({ old: l.old_data, new: l.new_data }, null, 2))}</pre>
-                </details>
-              </td>
-            </tr>`).join('')}
-        </tbody>
-      </table>`;
-  } catch (err) {
-    container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
-  }
-}
-
-// ============================================================
 // USERS
 // ============================================================
 async function renderAdminUsersTab() {
@@ -597,7 +560,7 @@ async function renderAdminUsersTab() {
     container.innerHTML = `
       <h2>Gestión de Usuarios</h2>
       <p class="admin-users-hint">El campo <strong>Admitido</strong> controla si el usuario puede introducir predicciones. Los usuarios deben ser admitidos manualmente por un superadministrador.</p>
-      <table class="admin-table">
+      <table class="admin-table admin-users-table">
         <thead><tr><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Admitido</th><th>Registro</th><th>Acción</th></tr></thead>
         <tbody>
           ${users.map(u => `

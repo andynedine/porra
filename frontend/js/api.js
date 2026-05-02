@@ -374,17 +374,6 @@ export async function adminUpdatePrediction(predictionId, homeScore, awayScore) 
   return data;
 }
 
-// ---- ADMIN: Change logs ------------------------------------
-export async function getChangeLogs(limit = 100) {
-  const { data, error } = await supabase
-    .from('change_logs')
-    .select('*, user:changed_by(username)')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data;
-}
-
 // ---- ADMIN: Users list -------------------------------------
 export async function getAllUsers() {
   const { data, error } = await supabase

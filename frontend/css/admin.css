@@ -385,6 +385,21 @@ details[open] .admin-round-summary::before { transform: rotate(90deg); }
   .admin-table th:nth-child(n+5),
   .admin-table td:nth-child(n+5) { display: none; }
 
+  /* Users table: show only Usuario (1), Teléfono (3), Admitido (5) */
+  .admin-users-table th:nth-child(2),
+  .admin-users-table td:nth-child(2),
+  .admin-users-table th:nth-child(4),
+  .admin-users-table td:nth-child(4),
+  .admin-users-table th:nth-child(6),
+  .admin-users-table td:nth-child(6),
+  .admin-users-table th:nth-child(7),
+  .admin-users-table td:nth-child(7) { display: none; }
+  .admin-users-table th:nth-child(n+5),
+  .admin-users-table td:nth-child(n+5) { display: none; }
+  /* Re-show column 5 (Admitido) which the generic rule above hid */
+  .admin-users-table th:nth-child(5),
+  .admin-users-table td:nth-child(5) { display: table-cell; }
+
   /* Admin form full width */
   .admin-form { padding: 16px; }
 
