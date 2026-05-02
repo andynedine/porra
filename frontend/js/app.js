@@ -82,7 +82,7 @@ async function initDashboardPage(session) {
   // Main tabs
   const tabs = {
     partidos:      () => initMatchesTab(user),
-    predicciones:  () => initPredictions(user),
+    predicciones:  () => initPredictions(user, profile),
     clasificacion: () => initRanking(user),
     estadisticas:  () => initStats(user),
     comparar:      () => initCompare(user),
@@ -108,7 +108,7 @@ async function initDashboardPage(session) {
     const activePanel = document.querySelector('.dash-panel:not(.hidden)');
     if (!activePanel) return;
     if (activePanel.id === 'panel-partidos')      await initMatchesTab(user);
-    if (activePanel.id === 'panel-predicciones')  await initPredictions(user);
+    if (activePanel.id === 'panel-predicciones')  await initPredictions(user, profile);
     if (activePanel.id === 'panel-estadisticas')  await initStats(user);
   });
 }

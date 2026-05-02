@@ -389,7 +389,7 @@ export async function getChangeLogs(limit = 100) {
 export async function getAllUsers() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, username, email, phone, role, created_at')
+    .select('id, username, email, phone, role, admitido, created_at')
     .order('username');
   if (error) throw error;
   return data;
@@ -399,6 +399,14 @@ export async function updateUserRole(userId, role) {
   const { error } = await supabase
     .from('profiles')
     .update({ role })
+    .eq('id', userId);
+  if (error) throw error;
+}
+
+export async function updateUserAdmitido(userId, admitido) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ admitido })
     .eq('id', userId);
   if (error) throw error;
 }

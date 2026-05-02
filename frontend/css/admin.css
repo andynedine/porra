@@ -61,6 +61,18 @@
 /* ---- Admin Panel ----------------------------------------- */
 .admin-panel { animation: fadeIn 0.25s ease; }
 
+/* ---- Admin users hint ------------------------------------- */
+.admin-users-hint {
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 1rem;
+  padding: 0.6rem 1rem;
+  background: rgba(79,142,247,0.08);
+  border-left: 3px solid var(--clr-blue);
+  border-radius: var(--radius-sm);
+}
+.admitido-cell { white-space: nowrap; }
+
 /* ---- Admin Tables ---------------------------------------- */
 .admin-table {
   width: 100%;

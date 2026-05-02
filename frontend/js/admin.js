@@ -6,7 +6,7 @@ import {
   upsertMatchResult, upsertMatch,
   getDeadlines, upsertDeadline,
   getAllUserPredictions, adminUpdatePrediction,
-  getChangeLogs, getAllUsers, updateUserRole,
+  getChangeLogs, getAllUsers, updateUserRole, updateUserAdmitido,
   getTournamentResult, upsertTournamentResult,
   getGroupPositionResults, upsertGroupPositionResult,
   getStandings, adminRecalculateAllScores,
@@ -596,11 +596,12 @@ async function renderAdminUsersTab() {
     const users = await getAllUsers();
     container.innerHTML = `
       <h2>Gestión de Usuarios</h2>
+      <p class="admin-users-hint">El campo <strong>Admitido</strong> controla si el usuario puede introducir predicciones. Los usuarios deben ser admitidos manualmente por un superadministrador.</p>
       <table class="admin-table">
-        <thead><tr><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Registro</th><th>Acción</th></tr></thead>
+        <thead><tr><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Admitido</th><th>Registro</th><th>Acción</th></tr></thead>
         <tbody>
           ${users.map(u => `
-            <tr>
+            <tr id="user-row-${u.id}">
               <td>${escapeHtml(u.username)}</td>
               <td>${escapeHtml(u.email)}</td>
               <td>${escapeHtml(u.phone ?? '—')}</td>
@@ -610,9 +611,15 @@ async function renderAdminUsersTab() {
                   <option value="SUPERADMIN" ${u.role === 'SUPERADMIN' ? 'selected' : ''}>SUPERADMIN</option>
                 </select>
               </td>
+              <td class="admitido-cell">
+                <button class="btn btn--xs admitido-toggle-btn ${u.admitido ? 'btn--success' : 'btn--warning'}"
+                  data-user="${u.id}" data-admitido="${u.admitido ? 'true' : 'false'}">
+                  ${u.admitido ? '✅ Admitido' : '⏳ Pendiente'}
+                </button>
+              </td>
               <td>${formatDate(u.created_at, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
               <td>
-                <button class="btn btn--xs btn--primary save-role-btn" data-user="${u.id}">💾 Guardar</button>
+                <button class="btn btn--xs btn--primary save-role-btn" data-user="${u.id}">💾 Guardar rol</button>
               </td>
             </tr>`).join('')}
         </tbody>
@@ -626,6 +633,24 @@ async function renderAdminUsersTab() {
         try {
           await updateUserRole(userId, role);
           showToast('Rol actualizado', 'success');
+        } catch (err) {
+          showToast('Error: ' + err.message, 'error');
+        } finally { btn.disabled = false; }
+      });
+    });
+
+    container.querySelectorAll('.admitido-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.user;
+        const current = btn.dataset.admitido === 'true';
+        const newValue = !current;
+        btn.disabled = true;
+        try {
+          await updateUserAdmitido(userId, newValue);
+          btn.dataset.admitido = newValue ? 'true' : 'false';
+          btn.textContent = newValue ? '✅ Admitido' : '⏳ Pendiente';
+          btn.className = `btn btn--xs admitido-toggle-btn ${newValue ? 'btn--success' : 'btn--warning'}`;
+          showToast(newValue ? 'Usuario admitido' : 'Usuario suspendido', 'success');
         } catch (err) {
           showToast('Error: ' + err.message, 'error');
         } finally { btn.disabled = false; }

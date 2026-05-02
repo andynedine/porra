@@ -20,10 +20,23 @@ let _currentUser = null;
 let _deadlines = {};
 
 /** Initialize predictions module */
-export async function initPredictions(user) {
+export async function initPredictions(user, profile) {
   _currentUser = user;
   const el = document.getElementById('predictions-section');
   if (!el) return;
+
+  // Block non-admitted users entirely
+  if (!profile?.admitido) {
+    el.innerHTML = `
+      <div class="admitido-pending-banner">
+        <span class="admitido-pending-banner__icon">🔐</span>
+        <div>
+          <strong>Cuenta pendiente de aprobación</strong>
+          <p>Tu cuenta ha sido verificada correctamente, pero un superadministrador todavía no te ha admitido en la porra. En cuanto te activen podrás introducir todas tus predicciones.</p>
+        </div>
+      </div>`;
+    return;
+  }
 
   el.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando predicciones…</div>';
 
