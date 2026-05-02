@@ -5,7 +5,6 @@ import {
   getMatches, getTeams, getGroups,
   upsertMatchResult, upsertMatch,
   getDeadlines, upsertDeadline,
-  getAllUserPredictions, adminUpdatePrediction,
   getAllUsers, updateUserRole, updateUserAdmitido,
   getTournamentResult, upsertTournamentResult,
   getGroupPositionResults, upsertGroupPositionResult,
@@ -15,6 +14,7 @@ import {
   formatDate, escapeHtml, showToast, roundLabel, deadlinePassed, groupBy, flagImg,
 } from './utils.js';
 import { ROUNDS } from './config.js';
+import { initAdminCompare } from './compare.js';
 
 // ============================================================
 // FLAG-SELECT HELPERS (shared with admin forms)
@@ -69,8 +69,10 @@ function bindFlagSelects(container) {
 
 let _teams = [];
 let _groups = [];
+let _adminUser = null;
 
-export async function initAdmin() {
+export async function initAdmin(user) {
+  _adminUser = user;
   try {
     [_teams, _groups] = await Promise.all([getTeams(), getGroups()]);
     bindAdminTabs();
@@ -105,7 +107,7 @@ async function loadAdminPanel(panel) {
     case 'results':    await renderAdminResultsTab(); break;
     case 'matches':    await renderAdminMatchesTab(); break;
     case 'deadlines':  await renderAdminDeadlinesTab(); break;
-    case 'predictions':await renderAdminPredictionsTab(); break;
+    case 'predictions': await renderAdminPredictionsTab(); break;
     case 'users':      await renderAdminUsersTab(); break;
   }
 }
@@ -475,77 +477,11 @@ async function renderAdminDeadlinesTab() {
 }
 
 // ============================================================
-// USER PREDICTIONS (admin edit)
+// VER TODOS — superadmin view (all phases, no deadline gate)
 // ============================================================
 async function renderAdminPredictionsTab() {
-  const container = document.getElementById('admin-panel-predictions');
-  if (!container) return;
-  container.innerHTML = `
-    <h2>Editar Predicciones de Usuarios</h2>
-    <div class="form-row">
-      <label>Seleccionar partido:
-        <select id="admin-match-select"><option value="">Cargando…</option></select>
-      </label>
-    </div>
-    <div id="admin-preds-list"></div>`;
-
-  try {
-    const matches = await getMatches();
-    const sel = container.querySelector('#admin-match-select');
-    sel.innerHTML = '<option value="">— Seleccionar partido —</option>' +
-      matches.map(m => {
-        const h = m.home_team?.name ?? 'TBD';
-        const a = m.away_team?.name ?? 'TBD';
-        return `<option value="${m.id}">${escapeHtml(roundLabel(m.round))} — ${escapeHtml(h)} vs ${escapeHtml(a)} (${formatDate(m.match_datetime)})</option>`;
-      }).join('');
-
-    sel.addEventListener('change', async () => {
-      const matchId = parseInt(sel.value, 10);
-      if (!matchId) return;
-      const listDiv = container.querySelector('#admin-preds-list');
-      listDiv.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
-      try {
-        const preds = await getAllUserPredictions(matchId);
-        if (!preds.length) { listDiv.innerHTML = '<div class="empty">No hay predicciones para este partido</div>'; return; }
-
-        listDiv.innerHTML = `
-          <table class="admin-table">
-            <thead><tr><th>Usuario</th><th>Local</th><th>Visitante</th><th>Pts</th><th>Acción</th></tr></thead>
-            <tbody>
-              ${preds.map(p => `
-                <tr id="admin-pred-row-${p.id}">
-                  <td>${escapeHtml(p.user?.username ?? p.user_id)}</td>
-                  <td><input type="number" class="score-input admin-score" value="${p.home_score >= 0 ? p.home_score : ''}" min="0" max="99" data-pred="${p.id}" data-side="home"></td>
-                  <td><input type="number" class="score-input admin-score" value="${p.away_score >= 0 ? p.away_score : ''}" min="0" max="99" data-pred="${p.id}" data-side="away"></td>
-                  <td>${p.points}</td>
-                  <td><button class="btn btn--xs btn--primary save-pred-btn" data-pred="${p.id}">💾</button></td>
-                </tr>`).join('')}
-            </tbody>
-          </table>`;
-
-        listDiv.querySelectorAll('.save-pred-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const predId = parseInt(btn.dataset.pred, 10);
-            const row = document.getElementById(`admin-pred-row-${predId}`);
-            const h = parseInt(row.querySelector('[data-side="home"]').value, 10);
-            const a = parseInt(row.querySelector('[data-side="away"]').value, 10);
-            if (isNaN(h) || isNaN(a)) { showToast('Valores inválidos', 'warning'); return; }
-            btn.disabled = true;
-            try {
-              await adminUpdatePrediction(predId, h, a);
-              showToast('Predicción actualizada', 'success');
-            } catch (err) {
-              showToast('Error: ' + err.message, 'error');
-            } finally { btn.disabled = false; }
-          });
-        });
-      } catch (err) {
-        listDiv.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
-      }
-    });
-  } catch (err) {
-    container.innerHTML = `<div class="error">${escapeHtml(err.message)}</div>`;
-  }
+  // _adminUser is stored when initAdmin is called — pass it through
+  await initAdminCompare(_adminUser);
 }
 
 // ============================================================

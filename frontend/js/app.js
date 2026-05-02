@@ -296,5 +296,5 @@ async function initAdminPage(session) {
   document.getElementById('logout-btn')?.addEventListener('click', logout);
 
   const { initAdmin } = await import('./admin.js');
-  await initAdmin();
+  await initAdmin(session.user);
 }

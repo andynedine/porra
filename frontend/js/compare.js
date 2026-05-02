@@ -15,28 +15,45 @@ let _currentUser = null;
 let _deadlines   = {};
 
 // ============================================================
-// Entry point
+// Entry point — user dashboard
 // ============================================================
 export async function initCompare(user) {
   _currentUser = user;
   const container = document.getElementById('panel-comparar');
   if (!container) return;
+  await _renderCompare(container, /* forceAll */ false);
+}
 
+// ============================================================
+// Entry point — superadmin panel (all phases always visible)
+// ============================================================
+export async function initAdminCompare(user) {
+  _currentUser = user;
+  const container = document.getElementById('admin-panel-predictions');
+  if (!container) return;
+  await _renderCompare(container, /* forceAll */ true);
+}
+
+// ============================================================
+// Shared renderer
+// ============================================================
+async function _renderCompare(container, forceAll) {
   container.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando…</div>';
 
   try {
     _deadlines = await getDeadlines();
 
-    // Only show rounds whose deadline has already passed
+    // Show rounds whose deadline has passed — or all rounds when forceAll (admin)
     const roundOrder = Object.keys(ROUNDS);
     const passedRounds = roundOrder.filter(r => {
+      if (forceAll) return true;
       const dl = _deadlines[r];
       return dl?.deadline_at && deadlinePassed(dl.deadline_at);
     });
 
     // 'tournament' is a special virtual phase (not in ROUNDS)
     const tournamentDl = _deadlines['tournament'];
-    const tournamentPassed = tournamentDl?.deadline_at && deadlinePassed(tournamentDl.deadline_at);
+    const tournamentPassed = forceAll || (tournamentDl?.deadline_at && deadlinePassed(tournamentDl.deadline_at));
     const allPhases = [
       ...(tournamentPassed ? ['tournament'] : []),
       ...passedRounds,
@@ -52,12 +69,18 @@ export async function initCompare(user) {
       return;
     }
 
+    const phaseLabel = (r) => {
+      const name = r === 'tournament' ? 'Torneo Final' : escapeHtml(roundLabel(r));
+      if (forceAll) return name;
+      return `🔒 ${name}`;
+    };
+
     const navHtml = `
       <nav class="compare-phase-nav" role="tablist" aria-label="Seleccionar fase">
         ${allPhases.map((r, i) =>
           `<button class="compare-phase-btn${i === 0 ? ' active' : ''}"
             data-round="${escapeHtml(r)}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}">
-            🔒 ${r === 'tournament' ? 'Torneo Final' : escapeHtml(roundLabel(r))}
+            ${phaseLabel(r)}
           </button>`
         ).join('')}
       </nav>
