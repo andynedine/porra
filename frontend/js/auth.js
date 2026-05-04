@@ -87,14 +87,16 @@ export async function register({ email, password, username, phone }) {
     throw new Error('Usuario ya registrado con este correo electrónico.');
   }
 
-  // 2. Ensure profile username is unique before returning
+  // 2. Upsert profile (handles both new users and re-registration after profile deletion)
   if (data.user) {
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ username: username.trim(), phone: phone?.trim() ?? '' })
-      .eq('id', data.user.id);
+      .upsert(
+        { id: data.user.id, username: username.trim(), phone: phone?.trim() ?? '', email: email.trim() },
+        { onConflict: 'id' }
+      );
     if (profileError) {
-      console.warn('Profile update warning:', profileError.message);
+      console.warn('Profile upsert warning:', profileError.message);
     }
   }
 
@@ -199,15 +201,10 @@ export function bindRegisterForm(formId, onSuccess) {
 
     setButtonLoading(btn, true, 'Registrar');
     try {
-      const { user } = await register({ email, password, username, phone });
-      if (user && !user.confirmed_at) {
-        showToast('¡Registro exitoso! Revisa tu email para confirmar tu cuenta.', 'success', 6000);
-      } else {
-        onSuccess?.();
-      }
+      await register({ email, password, username, phone });
+      window.location.replace('registro-confirmado.html');
     } catch (err) {
       showToast(translateError(err.message), 'error');
-    } finally {
       setButtonLoading(btn, false, 'Registrar');
     }
   });

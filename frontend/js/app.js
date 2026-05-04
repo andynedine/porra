@@ -101,15 +101,15 @@ async function initDashboardPage(session) {
   });
 
   // Default tab
-  const defaultTab = document.querySelector('.dash-tab[data-tab="partidos"]');
+  const defaultTab = document.querySelector('.dash-tab[data-tab="predicciones"]');
   if (defaultTab) activateDashTab(defaultTab, tabs);
 
   // Realtime: refresh active panel when results change
   subscribeToMatchResults(async () => {
     const activePanel = document.querySelector('.dash-panel:not(.hidden)');
     if (!activePanel) return;
-    if (activePanel.id === 'panel-partidos')      await initMatchesTab(user);
     if (activePanel.id === 'panel-predicciones')  await initPredictions(user, profile);
+    if (activePanel.id === 'panel-partidos')      await initMatchesTab(user);
     if (activePanel.id === 'panel-estadisticas')  await initStats(user);
   });
 }
@@ -141,26 +141,36 @@ async function initMatchesTab(user) {
     // Sort all matches by datetime ascending upfront
     matches.sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
     const byRound = groupBy(matches, 'round');
-    const roundOrder = ['group', 'octavos', 'cuartos', 'semis', 'tercero', 'final'];
+    const roundOrder = ['group', 'dieciseisavos', 'octavos', 'cuartos', 'semis', 'tercero', 'final'];
     let html = '';
 
     for (const round of roundOrder) {
       const roundMatches = byRound[round] ?? [];
-      if (!roundMatches.length) continue;
+      const label = roundLabel(round);
+      const count = roundMatches.length;
 
-      html += `<h3 class="round-heading">${escapeHtml(roundLabel(round))}</h3>`;
+      // Determine if this round should be open by default:
+      // open the first round that has unfinished matches, or the group stage if all pending
+      const hasUnfinished = roundMatches.some(m => m.status !== 'finished');
+      const isOpen = count === 0 ? false : (round === 'group' && byRound['group']?.some(m => m.status !== 'finished'));
 
-      if (round === 'group') {
-        // Render group-by-group (already sorted by datetime from above)
+      html += `<details class="cal-round-details"${isOpen ? ' open' : ''}>
+        <summary class="cal-round-summary">
+          <span class="cal-round-label">${escapeHtml(label)}</span>
+          <span class="cal-round-meta">${count > 0 ? `${count} partido${count !== 1 ? 's' : ''}` : 'Sin partidos aún'}</span>
+        </summary>`;
+
+      if (count === 0) {
+        html += `<div class="cal-round-empty">Los partidos de esta fase aún no han sido publicados.</div>`;
+      } else if (round === 'group') {
         const byGroup = groupBy(roundMatches, 'group_id');
         for (const g of groups) {
           const gMatches = byGroup[g.id] ?? [];
+          if (!gMatches.length) continue;
           html += `<div class="group-section">
             <h4 class="group-heading">Grupo ${escapeHtml(g.letter)}</h4>
             <div class="matches-list">`;
-          for (const m of gMatches) {
-            html += buildMatchRow(m);
-          }
+          for (const m of gMatches) html += buildMatchRow(m);
           html += '</div></div>';
         }
       } else {
@@ -168,6 +178,8 @@ async function initMatchesTab(user) {
         for (const m of roundMatches) html += buildMatchRow(m);
         html += '</div>';
       }
+
+      html += '</details>';
     }
 
     container.innerHTML = html || '<div class="empty">No hay partidos cargados</div>';

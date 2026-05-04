@@ -400,6 +400,11 @@ export async function updateUserAdmitido(userId, admitido) {
   if (error) throw error;
 }
 
+export async function deleteUsers(userIds) {
+  const { error } = await supabase.rpc('admin_delete_users', { user_ids: userIds });
+  if (error) throw error;
+}
+
 /**
  * Returns every user's tournament prediction (champion, finalists, top scorer).
  * RLS enforces this only returns data once the 'tournament' deadline has passed.

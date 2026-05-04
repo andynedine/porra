@@ -68,9 +68,9 @@ async function renderPredictionsUI(container) {
   // ---- SUB-NAV ----
   const subnavHtml = `
     <nav class="pred-subnav" role="tablist" aria-label="Secciones de predicciones">
-      <button class="pred-subtab active" role="tab" data-subtab="torneo" aria-selected="true">🏆 Resultado final</button>
+      <button class="pred-subtab active" role="tab" data-subtab="fases" aria-selected="true">⚽ Resultados por fases</button>
+      <button class="pred-subtab" role="tab" data-subtab="torneo" aria-selected="false">🏆 Resultado final</button>
       <button class="pred-subtab" role="tab" data-subtab="clasificacion" aria-selected="false">📋 Clasificación Fase Regular</button>
-      <button class="pred-subtab" role="tab" data-subtab="fases" aria-selected="false">⚽ Resultados por fases</button>
     </nav>`;
 
   // ---- PANEL: TORNEO ----
@@ -218,9 +218,9 @@ async function renderPredictionsUI(container) {
 
   // ---- ASSEMBLE ----
   container.innerHTML = subnavHtml
-    + `<div id="pred-panel-torneo"        class="pred-subpanel">${tournamentHtml}</div>`
-    + `<div id="pred-panel-clasificacion" class="pred-subpanel hidden">${classifHtml}</div>`
-    + `<div id="pred-panel-fases"         class="pred-subpanel hidden">${tabsHtml}${contentHtml}</div>`;
+    + `<div id="pred-panel-fases"         class="pred-subpanel">${tabsHtml}${contentHtml}</div>`
+    + `<div id="pred-panel-torneo"        class="pred-subpanel hidden">${tournamentHtml}</div>`
+    + `<div id="pred-panel-clasificacion" class="pred-subpanel hidden">${classifHtml}</div>`;
 
   // Sub-tab switching
   container.querySelectorAll('.pred-subtab').forEach(tab => {

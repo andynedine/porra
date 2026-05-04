@@ -608,6 +608,61 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
 
+/* ---- Calendar round accordion ---------------------------- */
+.cal-round-details {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.cal-round-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  background: var(--clr-bg-1);
+  border-left: 3px solid var(--clr-gold);
+  transition: background 0.15s;
+}
+.cal-round-summary::-webkit-details-marker { display: none; }
+.cal-round-summary::after {
+  content: '▸';
+  color: var(--clr-gold);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.cal-round-details[open] .cal-round-summary::after { transform: rotate(90deg); }
+.cal-round-summary:hover { background: var(--clr-bg-2); }
+.cal-round-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--clr-gold);
+}
+.cal-round-meta {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  margin-right: auto;
+  padding-left: 0.5rem;
+}
+.cal-round-details .matches-list,
+.cal-round-details .group-section {
+  padding: 0.5rem;
+  margin: 0.5rem;
+}
+.cal-round-details .group-section:last-child { padding-bottom: 0.75rem; }
+.cal-round-details > .matches-list { padding-bottom: 0.75rem; }
+.cal-round-empty {
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+  font-style: italic;
+}
+
 /* ---- Group + Round Headings ------------------------------ */
 .round-heading {
   font-size: 1.05rem;

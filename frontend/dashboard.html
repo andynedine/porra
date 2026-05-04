@@ -36,10 +36,6 @@
 
   <!-- ===== NAVIGATION TABS ===== -->
   <nav class="dash-nav" role="tablist" aria-label="Secciones del dashboard">
-    <button class="dash-tab" role="tab" data-tab="partidos"
-      aria-selected="false" aria-controls="panel-partidos">
-      📅 Partidos
-    </button>
     <button class="dash-tab" role="tab" data-tab="predicciones"
       aria-selected="false" aria-controls="panel-predicciones">
       ✍️ Predicciones
@@ -56,6 +52,10 @@
       aria-selected="false" aria-controls="panel-comparar">
       👁 Ver todos
     </button>
+    <button class="dash-tab" role="tab" data-tab="partidos"
+      aria-selected="false" aria-controls="panel-partidos">
+      📅 Calendario
+    </button>
     <button class="dash-tab" role="tab" data-tab="normas"
       aria-selected="false" aria-controls="panel-normas">
       📋 Normas
@@ -67,11 +67,6 @@
 
   <!-- ===== MAIN CONTENT ===== -->
   <main class="dashboard-main" role="main">
-
-    <!-- PARTIDOS -->
-    <section id="panel-partidos" class="dash-panel hidden" role="tabpanel" aria-labelledby="tab-partidos">
-      <div class="loading"><span class="spinner"></span></div>
-    </section>
 
     <!-- PREDICCIONES -->
     <section id="panel-predicciones" class="dash-panel hidden" role="tabpanel" aria-labelledby="tab-predicciones">
@@ -96,6 +91,11 @@
 
     <!-- COMPARAR -->
     <section id="panel-comparar" class="dash-panel hidden" role="tabpanel" aria-labelledby="tab-comparar">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- PARTIDOS -->
+    <section id="panel-partidos" class="dash-panel hidden" role="tabpanel" aria-labelledby="tab-partidos">
       <div class="loading"><span class="spinner"></span></div>
     </section>
 

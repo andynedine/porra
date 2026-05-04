@@ -5,7 +5,7 @@ import {
   getMatches, getTeams, getGroups,
   upsertMatchResult, upsertMatch,
   getDeadlines, upsertDeadline,
-  getAllUsers, updateUserRole, updateUserAdmitido,
+  getAllUsers, updateUserRole, updateUserAdmitido, deleteUsers,
   getTournamentResult, upsertTournamentResult,
   getGroupPositionResults, upsertGroupPositionResult,
   getStandings, adminRecalculateAllScores,
@@ -121,13 +121,13 @@ async function renderAdminResultsTab() {
 
   container.innerHTML = `
     <nav class="admin-subnav" role="tablist">
-      <button class="admin-subtab active" role="tab" data-subpanel="final" aria-selected="true">🏆 Resultado final</button>
+      <button class="admin-subtab active" role="tab" data-subpanel="phases" aria-selected="true">✅ Resultados por fases</button>
+      <button class="admin-subtab" role="tab" data-subpanel="final" aria-selected="false">🏆 Resultado final</button>
       <button class="admin-subtab" role="tab" data-subpanel="classification" aria-selected="false">📊 Clasificación Fase Regular</button>
-      <button class="admin-subtab" role="tab" data-subpanel="phases" aria-selected="false">✅ Resultados por fases</button>
     </nav>
-    <div id="admin-results-subpanel-final" class="admin-subpanel"></div>
-    <div id="admin-results-subpanel-classification" class="admin-subpanel hidden"></div>
-    <div id="admin-results-subpanel-phases" class="admin-subpanel hidden"></div>`;
+    <div id="admin-results-subpanel-phases" class="admin-subpanel"></div>
+    <div id="admin-results-subpanel-final" class="admin-subpanel hidden"></div>
+    <div id="admin-results-subpanel-classification" class="admin-subpanel hidden"></div>`;
 
   container.querySelectorAll('.admin-subtab').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -148,17 +148,17 @@ async function renderAdminResultsTab() {
     });
   });
 
-  const initialPanel = document.getElementById('admin-results-subpanel-final');
-  await loadAdminResultsSubpanel('final', initialPanel);
+  const initialPanel = document.getElementById('admin-results-subpanel-phases');
+  await loadAdminResultsSubpanel('phases', initialPanel);
 }
 
 async function loadAdminResultsSubpanel(subpanel, panel) {
   panel.dataset.loaded = '1';
   panel.innerHTML = '<div class="loading"><span class="spinner"></span></div>';
   switch (subpanel) {
+    case 'phases':         await renderResultsByPhaseSubpanel(panel); break;
     case 'final':          await renderResultsFinalSubpanel(panel); break;
     case 'classification': await renderResultsClassificationSubpanel(panel); break;
-    case 'phases':         await renderResultsByPhaseSubpanel(panel); break;
   }
 }
 
@@ -496,11 +496,18 @@ async function renderAdminUsersTab() {
     container.innerHTML = `
       <h2>Gestión de Usuarios</h2>
       <p class="admin-users-hint">El campo <strong>Admitido</strong> controla si el usuario puede introducir predicciones. Los usuarios deben ser admitidos manualmente por un superadministrador.</p>
+      <div class="admin-users-toolbar">
+        <label class="admin-select-all-label">
+          <input type="checkbox" id="users-select-all"> Seleccionar todos
+        </label>
+        <button class="btn btn--xs btn--danger" id="delete-selected-btn" disabled>🗑️ Borrar seleccionados</button>
+      </div>
       <table class="admin-table admin-users-table">
-        <thead><tr><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Admitido</th><th>Registro</th><th>Acción</th></tr></thead>
+        <thead><tr><th></th><th>Usuario</th><th>Email</th><th>Teléfono</th><th>Rol</th><th>Admitido</th><th>Registro</th><th>Acción</th></tr></thead>
         <tbody>
           ${users.map(u => `
             <tr id="user-row-${u.id}">
+              <td><input type="checkbox" class="user-select-cb" data-user="${u.id}"></td>
               <td>${escapeHtml(u.username)}</td>
               <td>${escapeHtml(u.email)}</td>
               <td>${escapeHtml(u.phone ?? '—')}</td>
@@ -519,10 +526,71 @@ async function renderAdminUsersTab() {
               <td>${formatDate(u.created_at, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
               <td>
                 <button class="btn btn--xs btn--primary save-role-btn" data-user="${u.id}">💾 Guardar rol</button>
+                <button class="btn btn--xs btn--danger delete-user-btn" data-user="${u.id}" data-name="${escapeHtml(u.username)}">🗑️</button>
               </td>
             </tr>`).join('')}
         </tbody>
       </table>`;
+
+    // Select all checkbox
+    const selectAllCb = container.querySelector('#users-select-all');
+    const deleteBtn   = container.querySelector('#delete-selected-btn');
+
+    function updateDeleteBtn() {
+      const checked = container.querySelectorAll('.user-select-cb:checked');
+      deleteBtn.disabled = checked.length === 0;
+      deleteBtn.textContent = checked.length > 0
+        ? `🗑️ Borrar seleccionados (${checked.length})`
+        : '🗑️ Borrar seleccionados';
+    }
+
+    selectAllCb.addEventListener('change', () => {
+      container.querySelectorAll('.user-select-cb').forEach(cb => { cb.checked = selectAllCb.checked; });
+      updateDeleteBtn();
+    });
+    container.querySelectorAll('.user-select-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        selectAllCb.checked = [...container.querySelectorAll('.user-select-cb')].every(c => c.checked);
+        updateDeleteBtn();
+      });
+    });
+
+    // Delete selected
+    deleteBtn.addEventListener('click', async () => {
+      const checked = [...container.querySelectorAll('.user-select-cb:checked')];
+      const ids = checked.map(cb => cb.dataset.user);
+      if (!confirm(`¿Seguro que quieres borrar ${ids.length} usuario(s)? Esta acción no se puede deshacer.`)) return;
+      deleteBtn.disabled = true;
+      try {
+        await deleteUsers(ids);
+        ids.forEach(id => container.querySelector(`#user-row-${id}`)?.remove());
+        selectAllCb.checked = false;
+        updateDeleteBtn();
+        showToast(`${ids.length} usuario(s) eliminado(s)`, 'success');
+      } catch (err) {
+        showToast('Error al borrar: ' + err.message, 'error');
+        deleteBtn.disabled = false;
+      }
+    });
+
+    // Delete single user
+    container.querySelectorAll('.delete-user-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.user;
+        const name   = btn.dataset.name;
+        if (!confirm(`¿Seguro que quieres borrar al usuario "${name}"? Esta acción no se puede deshacer.`)) return;
+        btn.disabled = true;
+        try {
+          await deleteUsers([userId]);
+          container.querySelector(`#user-row-${userId}`)?.remove();
+          updateDeleteBtn();
+          showToast(`Usuario "${name}" eliminado`, 'success');
+        } catch (err) {
+          showToast('Error al borrar: ' + err.message, 'error');
+          btn.disabled = false;
+        }
+      });
+    });
 
     container.querySelectorAll('.save-role-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
