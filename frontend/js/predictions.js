@@ -32,7 +32,8 @@ export async function initPredictions(user, profile) {
         <span class="admitido-pending-banner__icon">🔐</span>
         <div>
           <strong>Cuenta pendiente de aprobación</strong>
-          <p>Tu cuenta ha sido verificada correctamente, pero un superadministrador todavía no te ha admitido en la porra. En cuanto te activen podrás introducir todas tus predicciones.</p>
+          <p>Tu cuenta ha sido verificada correctamente, pero el administrador todavía no te ha admitido en la porra. En cuanto revise que está realizado el pago te activará tu usuario y podrás introducir todas tus predicciones.</p>
+          <p>Gracias por tu comprensión y paciencia. Mientras tanto, puedes ir viendo las <b>Normas</b> y sistema de puntuación.</p>
         </div>
       </div>`;
     return;
