@@ -7,10 +7,10 @@
 
 -- ---------------------------------------------------------------
 -- PRE) Redefine calculate_tournament_bonus_points with explicit rules:
---   · Campeón acertado              → +10 pts
---   · Finalista A llega a la final  → +3 pts (si está entre campeón o subcampeón)
---   · Finalista B llega a la final  → +3 pts (si está entre campeón o subcampeón)
---   · Máximo goleador acertado      → +10 pts
+--   · Campeón acertado              → +8 pts
+--   · Finalista A llega a la final  → +4 pts (si está entre campeón o subcampeón)
+--   · Finalista B llega a la final  → +4 pts (si está entre campeón o subcampeón)
+--   · Máximo goleador acertado      → +6 pts
 --
 -- Columnas en tournament_predictions:
 --   champion_team_id   → elección de campeón del usuario
@@ -42,35 +42,35 @@ BEGIN
   -- Nothing to do if user has no prediction or admin hasn't entered results yet
   IF NOT v_pred_found OR NOT v_result_found THEN RETURN; END IF;
 
-  -- Campeón (+10): usuario acertó el campeón exacto
+  -- Campeón (+8): usuario acertó el campeón exacto
   IF v_pred.champion_team_id IS NOT NULL
      AND v_pred.champion_team_id = v_result.champion_team_id THEN
-    v_champion_pts := 10.0;
+    v_champion_pts := 8.0;
   END IF;
 
-  -- Finalista A (+3): el equipo elegido como Finalista A
+  -- Finalista A (+4): el equipo elegido como Finalista A
   -- llegó a la final (es campeón O subcampeón)
   IF v_pred.runner_up_team_id IS NOT NULL
      AND v_result.champion_team_id IS NOT NULL
      AND v_result.runner_up_team_id IS NOT NULL
      AND v_pred.runner_up_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
-    v_finalist1_pts := 3.0;
+    v_finalist1_pts := 4.0;
   END IF;
 
-  -- Finalista B (+3): el equipo elegido como Finalista B
+  -- Finalista B (+4): el equipo elegido como Finalista B
   -- llegó a la final (es campeón O subcampeón)
   IF v_pred.finalist_2_team_id IS NOT NULL
      AND v_result.champion_team_id IS NOT NULL
      AND v_result.runner_up_team_id IS NOT NULL
      AND v_pred.finalist_2_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
-    v_finalist2_pts := 3.0;
+    v_finalist2_pts := 4.0;
   END IF;
 
-  -- Máximo goleador (+10): coincidencia exacta (case-insensitive, sin espacios extra)
+  -- Máximo goleador (+6): coincidencia exacta (case-insensitive, sin espacios extra)
   IF v_pred.top_scorer_name IS NOT NULL
      AND v_result.top_scorer_name IS NOT NULL
      AND LOWER(TRIM(v_pred.top_scorer_name)) = LOWER(TRIM(v_result.top_scorer_name)) THEN
-    v_top_scorer_pts := 10.0;
+    v_top_scorer_pts := 6.0;
   END IF;
 
   UPDATE public.tournament_predictions SET

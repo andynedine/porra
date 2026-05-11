@@ -5,8 +5,8 @@
 --
 -- Scoring rules:
 --   +0.5 pts per correctly predicted position (pos 1–4)
---   +1.0 pt extra bonus if ALL 4 positions are correct (pleno)
---   Max per group = 3.0 pts
+--   +2.0 pts extra bonus if ALL 4 positions are correct (pleno)
+--   Max per group = 4.0 pts
 --
 -- Run in Supabase SQL Editor AFTER add_group_position_results.sql
 -- =============================================================
@@ -51,9 +51,9 @@ BEGIN
   IF v_pred.pos_4_team_id IS NOT NULL AND v_result.pos_4_team_id IS NOT NULL
      AND v_pred.pos_4_team_id = v_result.pos_4_team_id THEN v_correct := v_correct + 1; END IF;
 
-  -- 0.5 pts per correct position; +1 bonus for perfect (all 4 correct)
+  -- 0.5 pts per correct position; +2 bonus for perfect (all 4 correct)
   v_points := v_correct * 0.5;
-  IF v_correct = 4 THEN v_points := v_points + 1.0; END IF;
+  IF v_correct = 4 THEN v_points := v_points + 2.0; END IF;
 
   -- Persist updated points
   UPDATE public.group_position_predictions

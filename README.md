@@ -137,20 +137,21 @@ Al guardar, automáticamente:
 | Ronda | Exacto | Resultado | Notas |
 |-------|--------|-----------|-------|
 | Grupos | +2 | +1 | — |
-| Octavos | +2.5 | +1.5 | — |
-| Cuartos | +3 | +1.5 | — |
-| Semifinales | +3 | +1.5 | — |
-| 3er/4º Puesto | +4 | +2 | — |
-| Final | +4 | +2 | — |
+| Dieciseisavos | +3 | +1 | — |
+| Octavos | +4 | +1.5 | — |
+| Cuartos | +5 | +2 | — |
+| Semifinales | +6 | +2.5 | — |
+| 3er/4º Puesto | +6 | +2 | — |
+| Final | +8 | +3 | — |
 
 **Predicciones de grupo (clasificación final):**
 - +0.5 por cada posición correcta
-- +3 si las 4 posiciones son perfectas
+- +4 si las 4 posiciones son perfectas
 
 **Predicciones de torneo:**
-- Campeón correcto: **+10 pts**
-- Finalista correcto (cada uno): **+3 pts**
-- Máximo goleador correcto: **+10 pts**
+- Campeón correcto: **+8 pts**
+- Finalista correcto (cada uno): **+4 pts**
+- Máximo goleador correcto: **+6 pts**
 
 ---
 

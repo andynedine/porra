@@ -362,7 +362,7 @@ BEGIN
 
   -- Apply scoring rules
   IF v_correct = 4 THEN
-    v_points := 3.0;  -- perfect group bonus
+    v_points := 4.0;  -- perfect group bonus (0.5×4 = 2.0 + 2.0 bonus)
   ELSE
     v_points := v_correct * 0.5;
   END IF;
@@ -396,30 +396,30 @@ BEGIN
 
   IF NOT FOUND OR v_result IS NULL THEN RETURN; END IF;
 
-  -- Champion (+10)
+  -- Champion (+8)
   IF v_pred.champion_team_id = v_result.champion_team_id THEN
-    v_champion_pts := 10.0;
+    v_champion_pts := 8.0;
   END IF;
 
   -- runner_up_points no longer used (kept as 0 for backward compat)
   v_runner_up_pts := 0;
 
-  -- Finalist A reached the final (+3) — stored in runner_up_team_id column
+  -- Finalist A reached the final (+4) — stored in runner_up_team_id column
   IF v_pred.runner_up_team_id IS NOT NULL
      AND v_pred.runner_up_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
-    v_finalist1_pts := 3.0;
+    v_finalist1_pts := 4.0;
   END IF;
 
-  -- Finalist B reached the final (+3) — stored in finalist_2_team_id column
+  -- Finalist B reached the final (+4) — stored in finalist_2_team_id column
   IF v_pred.finalist_2_team_id IS NOT NULL
      AND v_pred.finalist_2_team_id IN (v_result.champion_team_id, v_result.runner_up_team_id) THEN
-    v_finalist2_pts := 3.0;
+    v_finalist2_pts := 4.0;
   END IF;
 
-  -- Top scorer (+10)
+  -- Top scorer (+6)
   IF v_pred.top_scorer_name IS NOT NULL
      AND LOWER(TRIM(v_pred.top_scorer_name)) = LOWER(TRIM(v_result.top_scorer_name)) THEN
-    v_top_scorer_pts := 10.0;
+    v_top_scorer_pts := 6.0;
   END IF;
 
   UPDATE public.tournament_predictions SET

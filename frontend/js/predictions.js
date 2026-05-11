@@ -414,18 +414,18 @@ async function buildTournamentPredSection(teams) {
       </div>` : ''}
       <form id="tournament-form" class="tournament-form ${closed ? 'form--locked' : ''}">
         <div class="form-group">
-          <label>🥇 Campeón (+10 pts)</label>
+          <label>🥇 Campeón (+8 pts)</label>
           ${buildFlagSelect('champion_team_id', teams, existing?.champion_team_id)}
         </div>
         <div class="form-group form-group--finalists">
-          <label>🏅 Finalistas — los 2 equipos que jugarán la final (+3 pts por finalista)</label>
+          <label>🏅 Finalistas — los 2 equipos que jugarán la final (+4 pts por finalista)</label>
           <div class="finalists-row">
             ${buildFlagSelect('finalist_1_team_id', teams, existing?.runner_up_team_id)}
             ${buildFlagSelect('finalist_2_team_id', teams, existing?.finalist_2_team_id)}
           </div>
         </div>
         <div class="form-group">
-          <label>⚽ Máximo Goleador (+10 pts)</label>
+          <label>⚽ Máximo Goleador (+6 pts)</label>
           <input type="text" name="top_scorer_name" 
             value="${escapeHtml(existing?.top_scorer_name ?? '')}"
             placeholder="Nombre del jugador" 
