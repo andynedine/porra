@@ -191,7 +191,13 @@ export async function upsertGroupPositionResult(groupId, positions) {
 export async function getTournamentPrediction(userId) {
   const { data, error } = await supabase
     .from('tournament_predictions')
-    .select('*, champion_team:champion_team_id(name,flag), finalist_1_team:runner_up_team_id(name,flag), finalist_2_team:finalist_2_team_id(name,flag)')
+    .select(`
+      champion_team_id, champion_points,
+      runner_up_team_id, runner_up_points,
+      finalist_2_team_id, finalist_1_points, finalist_2_points,
+      top_scorer_name, top_scorer_team_id, top_scorer_points,
+      calculated_at
+    `)
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;

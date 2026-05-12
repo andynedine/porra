@@ -6,7 +6,7 @@ import {
   savePredictionsBulk, upsertGroupPositionPrediction,
   getGroupPositionPredictions, getGroupPositionResults,
   upsertTournamentPrediction,
-  getTournamentPrediction, getGroups, getTeams,
+  getTournamentPrediction, getTournamentResult, getGroups, getTeams,
 } from './api.js';
 import {
   formatDate, deadlinePassed, roundLabel, scoringTooltip,
@@ -50,13 +50,14 @@ export async function initPredictions(user, profile) {
 }
 
 async function renderPredictionsUI(container) {
-  const [matches, myPreds, groups, teams, groupPosPreds, groupPosResults] = await Promise.all([
+  const [matches, myPreds, groups, teams, groupPosPreds, groupPosResults, tournamentResult] = await Promise.all([
     getMatches(),
     getMyPredictions(_currentUser.id),
     getGroups(),
     getTeams(),
     getGroupPositionPredictions(_currentUser.id),
     getGroupPositionResults(),
+    getTournamentResult().catch(() => null),
   ]);
 
   // Index my predictions by match_id
@@ -75,7 +76,7 @@ async function renderPredictionsUI(container) {
     </nav>`;
 
   // ---- PANEL: TORNEO ----
-  const tournamentHtml = await buildTournamentPredSection(teams);
+  const tournamentHtml = await buildTournamentPredSection(teams, tournamentResult);
 
   // ---- PANEL: CLASIFICACIÓN ----
   const classifHtml = buildGroupClassificationSection(groups, teams, groupPosPreds, groupPosResults);
@@ -373,10 +374,74 @@ async function saveRound(round, predMap, matches) {
 }
 
 // --- Tournament Predictions ---------------------------------
-async function buildTournamentPredSection(teams) {
+async function buildTournamentPredSection(teams, tournamentResult) {
   const dl = _deadlines['tournament'];
   const closed = deadlinePassed(dl?.deadline_at);
   const existing = await getTournamentPrediction(_currentUser.id).catch(() => null);
+
+  // --- Build result feedback block ---
+  let resultFeedbackHtml = '';
+  if (existing && tournamentResult) {
+    const res = tournamentResult;
+    const hasAnyResult = res.champion_team_id || res.runner_up_team_id || res.top_scorer_name;
+    if (hasAnyResult) {
+      const teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
+      const teamName = (id) => { const t = teamsById[id]; return t ? `${flagImg(t)} ${escapeHtml(t.name)}` : '—'; };
+
+      // Finalist set: champion + runner_up are both finalists
+      const finalistIds = new Set([res.champion_team_id, res.runner_up_team_id].filter(Boolean));
+
+      // Client-side pts (fallback if DB hasn't calculated yet)
+      let totalPts;
+      if (existing.calculated_at != null) {
+        totalPts = (existing.champion_points ?? 0)
+                 + (existing.runner_up_points ?? 0)
+                 + (existing.finalist_1_points ?? 0)
+                 + (existing.finalist_2_points ?? 0)
+                 + (existing.top_scorer_points ?? 0);
+      } else {
+        let pts = 0;
+        if (existing.champion_team_id && existing.champion_team_id === res.champion_team_id) pts += 8;
+        if (existing.runner_up_team_id && finalistIds.has(existing.runner_up_team_id)) pts += 4;
+        if (existing.finalist_2_team_id && finalistIds.has(existing.finalist_2_team_id)) pts += 4;
+        if (existing.top_scorer_name && res.top_scorer_name &&
+            existing.top_scorer_name.trim().toLowerCase() === res.top_scorer_name.trim().toLowerCase()) pts += 6;
+        totalPts = pts;
+      }
+
+      const champMatch  = existing.champion_team_id  === res.champion_team_id;
+      const fin1Match   = existing.runner_up_team_id  && finalistIds.has(existing.runner_up_team_id);
+      const fin2Match   = existing.finalist_2_team_id && finalistIds.has(existing.finalist_2_team_id);
+      const scorerMatch = existing.top_scorer_name && res.top_scorer_name &&
+                          existing.top_scorer_name.trim().toLowerCase() === res.top_scorer_name.trim().toLowerCase();
+
+      const row = (label, predHtml, pts, matched) => `
+        <div class="tourn-result-row ${matched ? 'tourn-result-row--hit' : 'tourn-result-row--miss'}">
+          <span class="tourn-result-label">${label}</span>
+          <span class="tourn-result-pred">${predHtml}</span>
+          <span class="tourn-result-icon">${matched ? '✅' : '✗'}</span>
+          <span class="tourn-result-pts ${pts > 0 ? 'points--positive' : 'points--zero'}">${matched ? `+${fmtPts(pts)} pts` : '—'}</span>
+        </div>`;
+
+      resultFeedbackHtml = `
+        <div class="tourn-result-feedback">
+          <div class="tourn-result-feedback__title">
+            Resultado oficial
+            <span class="tourn-result-total ${totalPts > 0 ? 'points--positive' : 'points--zero'}">+${fmtPts(totalPts)} pts total</span>
+          </div>
+          <div class="tourn-result-feedback__body">
+            ${row('🥇 Campeón',    existing.champion_team_id  ? teamName(existing.champion_team_id)  : '—', 8, champMatch)}
+            ${row('🏅 Finalista A', existing.runner_up_team_id  ? teamName(existing.runner_up_team_id)  : '—', 4, fin1Match)}
+            ${row('🏅 Finalista B', existing.finalist_2_team_id ? teamName(existing.finalist_2_team_id) : '—', 4, fin2Match)}
+            ${row('⚽ Goleador',    existing.top_scorer_name   ? escapeHtml(existing.top_scorer_name)   : '—', 6, scorerMatch)}
+          </div>
+          <div class="tourn-result-official">
+            <strong>Oficial:</strong>
+            🥇 ${teamName(res.champion_team_id)} · 🏅 ${teamName(res.runner_up_team_id)} · ⚽ ${res.top_scorer_name ? escapeHtml(res.top_scorer_name) : '—'}
+          </div>
+        </div>`;
+    }
+  }
 
   // Build custom flag-select HTML for a list of teams
   function buildFlagSelect(name, teamsList, selectedId) {
@@ -412,6 +477,7 @@ async function buildTournamentPredSection(teams) {
       ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
         ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
       </div>` : ''}
+      ${resultFeedbackHtml}
       <form id="tournament-form" class="tournament-form ${closed ? 'form--locked' : ''}">
         <div class="form-group">
           <label>🥇 Campeón (+8 pts)</label>
