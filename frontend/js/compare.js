@@ -7,7 +7,7 @@ import {
   getGroupPositionResults, getAllTournamentPredictions, getTournamentResult,
 } from './api.js';
 import {
-  formatDate, deadlinePassed, roundLabel, escapeHtml, flagImg, groupBy, fmtPts,
+  formatDate, deadlinePassed, roundLabel, escapeHtml, flagImg, groupBy, fmtPts, previewPoints,
 } from './utils.js';
 import { ROUNDS } from './config.js';
 
@@ -229,7 +229,7 @@ function buildMatchCard(match, preds) {
   });
 
   const rowsHtml = sorted.length
-    ? sorted.map(p => buildUserPredRow(p, result)).join('')
+    ? sorted.map(p => buildUserPredRow(p, result, match.round)).join('')
     : `<div class="compare-no-preds">Sin predicciones registradas</div>`;
 
   return `
@@ -246,7 +246,7 @@ function buildMatchCard(match, preds) {
     </div>`;
 }
 
-function buildUserPredRow(pred, result) {
+function buildUserPredRow(pred, result, round) {
   const isMe    = pred.user_id === _currentUser.id;
   const hasPred = pred.home_score != null && pred.home_score >= 0
                 && pred.away_score != null && pred.away_score >= 0;
@@ -254,6 +254,7 @@ function buildUserPredRow(pred, result) {
 
   let cls = '';
   let icon = '';
+  let computedPts = null;
   if (result && hasPred) {
     const pH = pred.home_score, pA = pred.away_score;
     const rH = result.home_score,  rA = result.away_score;
@@ -265,9 +266,15 @@ function buildUserPredRow(pred, result) {
       cls = pd === rd ? 'result--partial' : 'result--miss';
       icon = cls === 'result--partial' ? '↗' : '✗';
     }
+    // Fallback: compute pts client-side if DB hasn't calculated yet
+    computedPts = previewPoints(round ?? 'group', pH, pA, rH, rA);
   }
 
-  const ptsText = pred.points != null && pred.calculated_at ? fmtPts(pred.points) : '';
+  // Prefer DB-stored pts (authoritative); fall back to client-side preview
+  const ptsVal = (pred.points != null && pred.calculated_at)
+    ? pred.points
+    : computedPts;
+  const ptsText = ptsVal != null ? fmtPts(ptsVal) : '';
 
   return `
     <div class="compare-user-row${cls ? ' ' + cls : ''}${isMe ? ' compare-user-row--me' : ''}">
@@ -314,8 +321,16 @@ function buildGroupClassifSection(groups, teamsById, allGroupPreds, groupPosResu
 
     const userRows = preds.map(pred => {
       const isMe  = pred.user_id === _currentUser.id;
-      const pts   = pred.points != null && pred.calculated_at
-        ? `<span class="compare-classif-pts">${fmtPts(pred.points)} pts</span>` : '';
+      // Compute pts client-side as fallback when DB hasn't calculated yet
+      let ptsVal = (pred.points != null && pred.calculated_at) ? pred.points : null;
+      if (ptsVal === null && result) {
+        const posKeys2 = ['pos_1_team_id', 'pos_2_team_id', 'pos_3_team_id', 'pos_4_team_id'];
+        let correct = 0;
+        posKeys2.forEach(k => { if (pred[k] && result[k] && pred[k] === result[k]) correct++; });
+        ptsVal = correct * 0.5 + (correct === 4 ? 2.0 : 0);
+      }
+      const pts   = ptsVal != null
+        ? `<span class="compare-classif-pts">${fmtPts(ptsVal)} pts</span>` : '';
       const cells = posKeys.map((k) => {
         const t = teamsById[pred[k]];
         let cls = '';
