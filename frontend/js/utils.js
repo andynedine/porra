@@ -65,7 +65,7 @@ export function scoringTooltip(round) {
 
 /** Preview points client-side (same logic as SQL function) */
 export function previewPoints(round, homePred, awayPred, homeActual, awayActual) {
-  if (homePred < 0 || awayPred < 0) return 0;
+  if (homePred < 0 || awayPred < 0) return null;
   if (homeActual === null || homeActual === undefined) return null; // not played yet
   const s = SCORING[round] ?? SCORING.group;
   const predDir   = homePred   > awayPred   ? 'H' : homePred   < awayPred   ? 'A' : 'D';

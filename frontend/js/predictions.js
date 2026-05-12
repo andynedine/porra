@@ -550,10 +550,22 @@ function buildGroupClassificationSection(groups, allTeams, groupPosPreds, groupP
     const pred = predsByGroup[group.id] ?? {};
     const hasOfficialResult = resultsByGroup[group.id] !== undefined;
 
-    // Points badge: show only after admin has entered official results
-    const ptsEarned = (hasOfficialResult && pred.calculated_at != null)
-      ? (pred.points ?? 0)
-      : null;
+    // Points badge: prefer stored pts if already calculated, otherwise compute client-side
+    const hasPred = pred.pos_1_team_id != null || pred.pos_2_team_id != null
+                  || pred.pos_3_team_id != null || pred.pos_4_team_id != null;
+    let ptsEarned = null;
+    if (hasOfficialResult && hasPred) {
+      if (pred.calculated_at != null) {
+        ptsEarned = pred.points ?? 0;
+      } else {
+        // Client-side fallback when DB trigger hasn't run yet
+        const res = resultsByGroup[group.id];
+        const posKeys = ['pos_1_team_id', 'pos_2_team_id', 'pos_3_team_id', 'pos_4_team_id'];
+        let correct = 0;
+        posKeys.forEach(k => { if (pred[k] && res[k] && pred[k] === res[k]) correct++; });
+        ptsEarned = correct * 0.5 + (correct === 4 ? 2.0 : 0);
+      }
+    }
     const ptsBadge = ptsEarned !== null
       ? `<span class="group-classif-pts ${ptsEarned > 0 ? 'group-classif-pts--pos' : ''}">${ptsEarned > 0 ? '+' : ''}${fmtPts(ptsEarned)} pts</span>`
       : (hasOfficialResult ? `<span class="group-classif-pts group-classif-pts--pending">—</span>` : '');
