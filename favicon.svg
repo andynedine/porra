@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Base ball -->
+  <circle cx="32" cy="32" r="30" fill="#f5f5f5" stroke="#222" stroke-width="2.5"/>
+
+  <!-- Classic soccer ball pentagon/hexagon patches -->
+  <!-- Center pentagon (black) -->
+  <polygon points="32,14 40,20 37,30 27,30 24,20" fill="#222"/>
+
+  <!-- 5 surrounding black pentagons -->
+  <!-- Top-right -->
+  <polygon points="40,20 52,20 56,31 47,38 37,30" fill="#222"/>
+  <!-- Bottom-right -->
+  <polygon points="47,38 52,50 40,56 31,48 37,30" fill="#222"/>
+  <!-- Bottom-left -->
+  <polygon points="31,48 24,56 12,50 16,38 27,30" fill="#222"/>
+  <!-- Top-left -->
+  <polygon points="16,38 8,31 12,20 24,20 27,30" fill="#222"/>
+  <!-- Top -->
+  <polygon points="32,2 42,8 40,20 32,14 24,20 22,8" fill="#222"/>
+
+  <!-- Outer circle border -->
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#222" stroke-width="2.5"/>
+</svg>

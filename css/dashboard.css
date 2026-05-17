@@ -1,0 +1,254 @@
+/* =============================================================
+   dashboard.css — Dashboard-specific styles
+   ============================================================= */
+
+/* ---- Dashboard Layout ------------------------------------ */
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.dashboard-main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ---- Dashboard Tabs -------------------------------------- */
+.dash-nav {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  background: var(--clr-bg-1);
+  border-bottom: 1px solid var(--clr-border);
+  padding: 0 16px;
+  scrollbar-width: none;
+}
+.dash-nav::-webkit-scrollbar { display: none; }
+.dash-tab {
+  padding: 14px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--clr-text-muted);
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.dash-tab:hover { color: var(--clr-text); }
+.dash-tab.active {
+  color: var(--clr-accent);
+  border-bottom-color: var(--clr-accent);
+}
+
+/* ---- Panel Content --------------------------------------- */
+.dash-panel { animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---- Ranking Filter -------------------------------------- */
+.ranking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.round-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+.round-filter select { width: auto; min-width: 160px; }
+
+/* ---- Profile Form ---------------------------------------- */
+.profile-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.profile-col__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--clr-text);
+}
+.profile-form {
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 0;
+}
+
+/* ---- Group Section (matches overview) -------------------- */
+.group-section {
+  background: var(--clr-bg-1);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ---- Responsive ------------------------------------------ */
+@media (max-width: 600px) {
+  .dashboard-main { padding: 16px 10px 64px; }
+
+  /* Nav tabs: grid 3+2 so all tabs are visible without scrolling */
+  .dash-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow-x: visible;
+    padding: 0;
+    gap: 0;
+  }
+  .dash-tab {
+    padding: 10px 4px;
+    font-size: 0.7rem;
+    text-align: center;
+    white-space: normal;
+    border-bottom: 2px solid transparent;
+    border-right: 1px solid var(--clr-border);
+  }
+  .dash-tab:last-child { border-right: none; }
+
+  /* Profile form full width */
+  .profile-cols { grid-template-columns: 1fr; gap: 20px; }
+  .profile-col:first-child { padding-bottom: 20px; border-bottom: 1px solid var(--clr-border); }
+  .profile-form { padding: 16px; }
+
+  /* Ranking header */
+  .ranking-header { flex-direction: column; align-items: stretch; }
+  .round-filter { flex-wrap: wrap; }
+  .round-filter select { flex: 1; }
+
+  /* Group section */
+  .group-section { padding: 12px; }
+}
+
+/* =============================================================
+   NORMAS Y FUNCIONAMIENTO
+   ============================================================= */
+.normas-panel { padding: 0; }
+
+.normas-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.normas-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--clr-border);
+}
+
+/* ---- Block (A / B / C / D) ---- */
+.normas-block {
+  margin-bottom: 2.5rem;
+}
+
+.normas-block__heading {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--clr-accent);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.normas-block--admin .normas-block__heading {
+  color: var(--clr-gold);
+}
+
+/* ---- Ordered/Unordered lists ---- */
+.normas-list {
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--clr-text);
+  line-height: 1.6;
+}
+
+.normas-list li { padding-left: 0.25rem; }
+.normas-list li strong { color: var(--clr-text); }
+.normas-list--alpha { list-style-type: lower-alpha; margin-top: 0.5rem; }
+
+/* ---- Scoring grid ---- */
+.normas-scoring-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.normas-scoring-card {
+  background: var(--clr-bg-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.normas-scoring-card--highlight {
+  border-color: var(--clr-gold);
+  background: linear-gradient(135deg, var(--clr-bg-2), rgba(255,215,0,0.06));
+}
+
+.normas-scoring-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 0.6rem;
+}
+
+.normas-scoring-card__note {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+
+.normas-scoring-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--clr-text);
+}
+
+.normas-scoring-card__list .normas-scoring-card__note {
+  margin: 0.3rem 0 0;
+}
+
+/* ---- Point badges ---- */
+.pts {
+  display: inline-block;
+  min-width: 4rem;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-align: right;
+  margin-right: 0.5rem;
+}
+.pts--exact   { color: var(--clr-exact); }
+.pts--partial { color: var(--clr-partial); }
+.pts--miss    { color: var(--clr-miss); }
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+  .normas-scoring-grid { grid-template-columns: 1fr; }
+  .normas-container { padding: 1.25rem 1rem 3rem; }
+  .normas-title { font-size: 1.3rem; }
+}

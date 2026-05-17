@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Panel de Administración — Porra Mundial 2026" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Admin — Porra Mundial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&JetBrains+Mono:wght@400&display=swap" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7/css/flag-icons.min.css" />
+</head>
+<body data-page="admin" class="admin-layout">
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header" role="banner">
+    <span class="app-header__logo">
+      <img src="images/logo.png" alt="" class="app-header__logo-img" aria-hidden="true">Porra 2026
+    </span>
+    <span class="admin-badge">👑 SUPERADMIN</span>
+    <div class="app-header__spacer"></div>
+    <div class="app-header__user">
+      <button class="user-profile-btn user-profile-btn--static" aria-label="Usuario">
+        <svg class="user-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="user-name" class="user-name"></span>
+      </button>
+      <a href="dashboard.html" class="btn btn--xs btn--outline">← Dashboard</a>
+      <button id="logout-btn" class="btn btn--xs btn--outline">Salir</button>
+    </div>
+  </header>
+
+  <!-- ===== ADMIN TABS ===== -->
+  <nav class="admin-tabs" role="tablist" aria-label="Secciones de administración">
+    <button class="admin-tab" role="tab" data-panel="matches"
+      aria-selected="false" aria-controls="admin-panel-matches">
+      📅 Partidos
+    </button>
+    <button class="admin-tab" role="tab" data-panel="deadlines"
+      aria-selected="false" aria-controls="admin-panel-deadlines">
+      ⏰ Plazos
+    </button>
+    <button class="admin-tab active" role="tab" data-panel="results"
+      aria-selected="true" aria-controls="admin-panel-results">
+      ✅ Resultados
+    </button>
+    <button class="admin-tab" role="tab" data-panel="predictions"
+      aria-selected="false" aria-controls="admin-panel-predictions">
+      👁 Ver todos
+    </button>
+    <button class="admin-tab" role="tab" data-panel="users"
+      aria-selected="false" aria-controls="admin-panel-users">
+      👥 Usuarios
+    </button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="admin-main" role="main">
+
+    <!-- RESULTADOS -->
+    <section id="admin-panel-results" class="admin-panel" role="tabpanel">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- PARTIDOS -->
+    <section id="admin-panel-matches" class="admin-panel hidden" role="tabpanel">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- FECHAS LÍMITE -->
+    <section id="admin-panel-deadlines" class="admin-panel hidden" role="tabpanel">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- PREDICCIONES USUARIOS -->
+    <section id="admin-panel-predictions" class="admin-panel hidden" role="tabpanel">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- USUARIOS -->
+    <section id="admin-panel-users" class="admin-panel hidden" role="tabpanel">
+      <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

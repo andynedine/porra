@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Confirma tu registro — Porra Mundial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .confirm-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(79,142,247,0.12) 0%, transparent 60%),
+        var(--clr-bg-0);
+    }
+    .confirm-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .confirm-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 1rem;
+    }
+    .confirm-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--clr-gold), var(--clr-accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1rem;
+    }
+    .confirm-body {
+      color: var(--clr-text-muted);
+      font-size: 0.95rem;
+      line-height: 1.65;
+      margin-bottom: 1.5rem;
+    }
+    .confirm-body strong {
+      color: var(--clr-text);
+    }
+    .confirm-steps {
+      list-style: none;
+      padding: 0;
+      margin: 1.25rem 0 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      text-align: left;
+    }
+    .confirm-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--clr-text);
+    }
+    .confirm-steps .step-num {
+      flex-shrink: 0;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      background: var(--clr-blue);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.05rem;
+    }
+    .confirm-divider {
+      border: none;
+      border-top: 1px solid var(--clr-border);
+      margin: 1.5rem 0;
+    }
+    .confirm-footer {
+      font-size: 0.85rem;
+      color: var(--clr-text-muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="confirm-page">
+    <div class="confirm-card">
+      <span class="confirm-icon">📧</span>
+      <h1 class="confirm-title">¡Registro completado!</h1>
+      <p class="confirm-body">
+        Tu cuenta ha sido creada correctamente.<br>
+        Antes de poder acceder, necesitas <strong>confirmar tu correo electrónico</strong>.
+      </p>
+
+      <ol class="confirm-steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>Abre tu correo electrónico y busca un mensaje de <strong>Porra Mundial 2026</strong> (puede tardar unos minutos).</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Haz clic en el enlace de confirmación que encontrarás en ese mensaje.</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>Una vez confirmado, podrás iniciar sesión y empezar a hacer tus predicciones.</span>
+        </li>
+      </ol>
+
+      <p class="confirm-body" style="font-size:0.82rem;">
+        ¿No encuentras el correo? Revisa la carpeta de <strong>spam</strong> o correo no deseado.
+      </p>
+
+      <hr class="confirm-divider">
+
+      <a href="index.html" class="btn btn--primary" style="display:inline-block; width:100%; text-align:center;">
+        ← Volver a la página principal
+      </a>
+
+      <p class="confirm-footer" style="margin-top:1rem;">
+        Si tienes problemas, contacta con el administrador de la porra.
+      </p>
+    </div>
+  </main>
+</body>
+</html>

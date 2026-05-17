@@ -1,0 +1,724 @@
+// =============================================================
+// predictions.js — Predictions UI & logic
+// =============================================================
+import {
+  getMatches, getDeadlines, getMyPredictions,
+  savePredictionsBulk, upsertGroupPositionPrediction,
+  getGroupPositionPredictions, getGroupPositionResults,
+  upsertTournamentPrediction,
+  getTournamentPrediction, getTournamentResult, getGroups, getTeams,
+} from './api.js';
+import {
+  formatDate, deadlinePassed, roundLabel, scoringTooltip,
+  previewPoints, showToast, escapeHtml, fmtPts, resultClass, groupBy, flagImg,
+} from './utils.js';
+import { ROUNDS } from './config.js';
+
+let _unsavedChanges = false;
+let _pendingPredictions = {}; // match_id → { home, away }
+let _currentUser = null;
+let _deadlines = {};
+
+/** Initialize predictions module */
+export async function initPredictions(user, profile) {
+  _currentUser = user;
+  const el = document.getElementById('predictions-section');
+  if (!el) return;
+
+  // Block non-admitted users entirely
+  if (!profile?.admitido) {
+    el.innerHTML = `
+      <div class="admitido-pending-banner">
+        <span class="admitido-pending-banner__icon">🔐</span>
+        <div>
+          <strong>Cuenta pendiente de aprobación</strong>
+          <p>Tu cuenta ha sido verificada correctamente, pero el administrador todavía no te ha admitido en la porra. En cuanto revise que está realizado el pago te activará tu usuario y podrás introducir todas tus predicciones.</p>
+          <p>Gracias por tu comprensión y paciencia. Mientras tanto, puedes ir viendo las <b>Normas</b> y sistema de puntuación.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = '<div class="loading"><span class="spinner"></span> Cargando predicciones…</div>';
+
+  try {
+    [_deadlines] = await Promise.all([getDeadlines()]);
+    await renderPredictionsUI(el);
+  } catch (err) {
+    el.innerHTML = `<div class="error">Error al cargar predicciones: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function renderPredictionsUI(container) {
+  const [matches, myPreds, groups, teams, groupPosPreds, groupPosResults, tournamentResult] = await Promise.all([
+    getMatches(),
+    getMyPredictions(_currentUser.id),
+    getGroups(),
+    getTeams(),
+    getGroupPositionPredictions(_currentUser.id),
+    getGroupPositionResults(),
+    getTournamentResult().catch(() => null),
+  ]);
+
+  // Index my predictions by match_id
+  const predMap = {};
+  for (const p of myPreds) predMap[p.match_id] = p;
+
+  // Sort matches by date ascending
+  matches.sort((a, b) => new Date(a.match_datetime ?? 0) - new Date(b.match_datetime ?? 0));
+
+  // ---- SUB-NAV ----
+  const subnavHtml = `
+    <nav class="pred-subnav" role="tablist" aria-label="Secciones de predicciones">
+      <button class="pred-subtab active" role="tab" data-subtab="fases" aria-selected="true">⚽ Resultados por fases</button>
+      <button class="pred-subtab" role="tab" data-subtab="torneo" aria-selected="false">🏆 Resultado final</button>
+      <button class="pred-subtab" role="tab" data-subtab="clasificacion" aria-selected="false">📋 Clasificación Fase Regular</button>
+    </nav>`;
+
+  // ---- PANEL: TORNEO ----
+  const tournamentHtml = await buildTournamentPredSection(teams, tournamentResult);
+
+  // ---- PANEL: CLASIFICACIÓN ----
+  const classifHtml = buildGroupClassificationSection(groups, teams, groupPosPreds, groupPosResults);
+
+  // ---- PANEL: FASES (existing round tabs) ----
+  const roundOrder = Object.keys(ROUNDS);
+  const matchesByRound = groupBy(matches, 'round');
+
+  let tabsHtml = '<div class="round-tabs" role="tablist">';
+  let contentHtml = '';
+
+  for (const round of roundOrder) {
+    const roundMatches = matchesByRound[round] ?? [];
+    if (roundMatches.length === 0) continue;
+    const dl = _deadlines[round];
+    const closed = deadlinePassed(dl?.deadline_at);
+    const label = roundLabel(round);
+    const badge = closed ? '🔒' : '✍️';
+    tabsHtml += `
+      <button class="round-tab" role="tab" data-round="${escapeHtml(round)}"
+        aria-selected="false" aria-controls="round-panel-${escapeHtml(round)}">
+        ${badge} ${escapeHtml(label)}
+      </button>`;
+
+    contentHtml += `<div id="round-panel-${escapeHtml(round)}" class="round-panel hidden" role="tabpanel" data-round="${escapeHtml(round)}">`;
+
+    if (dl) {
+      contentHtml += `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
+        ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
+      </div>`;
+    }
+
+    function buildCard(m) {
+      const pred = predMap[m.id] ?? { home_score: -1, away_score: -1, points: 0, is_exact: false, is_partial: false, calculated_at: null };
+      const result = m.match_results ?? null;
+      const pts = result
+        ? previewPoints(m.round, pred.home_score, pred.away_score, result.home_score, result.away_score)
+        : null;
+      // Compute result class from live data when result is available (avoids stale DB cache)
+      let rCls = '';
+      if (result && pred.home_score >= 0 && pred.away_score >= 0) {
+        const pH = pred.home_score, pA = pred.away_score;
+        const rH = result.home_score, rA = result.away_score;
+        if (pH === rH && pA === rA) {
+          rCls = 'result--exact';
+        } else {
+          const predDir = pH > pA ? 'H' : pH < pA ? 'A' : 'D';
+          const resDir  = rH > rA ? 'H' : rH < rA ? 'A' : 'D';
+          rCls = predDir === resDir ? 'result--partial' : 'result--miss';
+        }
+      } else {
+        rCls = resultClass(pred.is_exact, pred.is_partial, pred.calculated_at);
+      }
+      const homeDisplay = pred.home_score >= 0 ? pred.home_score : '';
+      const awayDisplay = pred.away_score >= 0 ? pred.away_score : '';
+      return `
+        <div class="match-card ${rCls}" data-match-id="${m.id}">
+          <div class="match-card__header">
+            <span class="match-datetime">${formatDate(m.match_datetime)}</span>
+            ${m.group ? `<span class="match-group">Grupo ${escapeHtml(m.group.letter)}</span>` : `<span class="match-group">${escapeHtml(roundLabel(m.round))}</span>`}
+          </div>
+          <div class="match-card__teams">
+            <div class="team team--home">
+              <span class="team__flag">${flagImg(m.home_team)}</span>
+              <span class="team__name">${m.home_team ? escapeHtml(m.home_team.name) : 'Por confirmar'}</span>
+            </div>
+            <div class="prediction-inputs ${closed ? 'prediction-inputs--locked' : ''}">
+              <input type="number" class="score-input score-input--home"
+                data-match="${m.id}" data-side="home"
+                min="0" max="99"
+                value="${escapeHtml(String(homeDisplay))}"
+                ${closed ? 'disabled' : ''}
+                aria-label="Goles local">
+              <span class="score-sep">–</span>
+              <input type="number" class="score-input score-input--away"
+                data-match="${m.id}" data-side="away"
+                min="0" max="99"
+                value="${escapeHtml(String(awayDisplay))}"
+                ${closed ? 'disabled' : ''}
+                aria-label="Goles visitante">
+            </div>
+            <div class="team team--away">
+              <span class="team__name">${m.away_team ? escapeHtml(m.away_team.name) : 'Por confirmar'}</span>
+              <span class="team__flag">${flagImg(m.away_team)}</span>
+            </div>
+          </div>
+          ${result ? `
+            <div class="match-card__result">
+              Resultado: ${result.home_score} – ${result.away_score}
+            </div>` : ''}
+          ${pts !== null ? `<div class="match-card__points ${pts > 0 ? 'points--positive' : 'points--zero'}">+${fmtPts(pts)} pts</div>` : ''}
+          <div class="match-card__scoring-hint">${escapeHtml(scoringTooltip(m.round))}</div>
+        </div>`;
+    }
+
+    if (round === 'group') {
+      // Render separated by group with a heading divider
+      const byGroup = groupBy(roundMatches, 'group_id');
+      // Sort group keys by the first match's group letter
+      const sortedGroupIds = Object.keys(byGroup).sort((a, b) => {
+        const la = byGroup[a][0]?.group?.letter ?? '';
+        const lb = byGroup[b][0]?.group?.letter ?? '';
+        return la.localeCompare(lb);
+      });
+      for (const [i, gId] of sortedGroupIds.entries()) {
+        const gMatches = byGroup[gId];
+        const letter = gMatches[0]?.group?.letter ?? gId;
+        const isFirst = i === 0;
+        contentHtml += `<div class="group-block group-accordion ${isFirst ? 'group-accordion--open' : ''}" data-group="${escapeHtml(letter)}">
+          <button type="button" class="group-accordion__header">
+            <span>Grupo ${escapeHtml(letter)}</span>
+            <span class="group-accordion__icon">${isFirst ? '▲' : '▼'}</span>
+          </button>
+          <div class="group-accordion__body" ${isFirst ? '' : 'hidden'}>
+            <div class="matches-grid">`;
+        for (const m of gMatches) contentHtml += buildCard(m);
+        contentHtml += `</div></div></div>`;
+      }
+    } else {
+      contentHtml += `<div class="matches-grid">`;
+      for (const m of roundMatches) contentHtml += buildCard(m);
+      contentHtml += '</div>';
+    }
+
+    // Save button for open rounds
+    const closed2 = deadlinePassed(_deadlines[round]?.deadline_at);
+    if (!closed2) {
+      contentHtml += `
+        <div class="save-bar">
+          <button class="btn btn--primary save-round-btn" data-round="${escapeHtml(round)}" id="save-btn-${escapeHtml(round)}">
+            💾 Guardar predicciones
+          </button>
+          <span class="unsaved-indicator hidden" id="unsaved-${escapeHtml(round)}">⚠️ Hay cambios sin guardar</span>
+        </div>`;
+    }
+
+    contentHtml += '</div>'; // round-panel
+  }
+
+  tabsHtml += '</div>';
+
+  // ---- ASSEMBLE ----
+  container.innerHTML = subnavHtml
+    + `<div id="pred-panel-fases"         class="pred-subpanel">${tabsHtml}${contentHtml}</div>`
+    + `<div id="pred-panel-torneo"        class="pred-subpanel hidden">${tournamentHtml}</div>`
+    + `<div id="pred-panel-clasificacion" class="pred-subpanel hidden">${classifHtml}</div>`;
+
+  // Sub-tab switching
+  container.querySelectorAll('.pred-subtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      container.querySelectorAll('.pred-subtab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      container.querySelectorAll('.pred-subpanel').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      document.getElementById(`pred-panel-${tab.dataset.subtab}`)?.classList.remove('hidden');
+    });
+  });
+
+  // Activate first round tab
+  const firstTab = container.querySelector('.round-tab');
+  if (firstTab) activateTab(firstTab);
+
+  // Event: tab clicks
+  container.querySelectorAll('.round-tab').forEach(tab => {
+    tab.addEventListener('click', () => activateTab(tab));
+  });
+
+  // Event: score input changes
+  container.querySelectorAll('.score-input').forEach(input => {
+    input.addEventListener('input', onScoreInput);
+  });
+
+  // Event: save buttons
+  container.querySelectorAll('.save-round-btn').forEach(btn => {
+    btn.addEventListener('click', () => saveRound(btn.dataset.round, predMap, matches));
+  });
+
+  // Tournament form
+  bindTournamentForm(container);
+
+  // Group classification forms
+  bindGroupClassificationForms(container);
+
+  // Event: group accordions
+  container.querySelectorAll('.group-accordion__header').forEach(header => {
+    header.addEventListener('click', () => {
+      const clicked = header.closest('.group-accordion');
+      const panel   = clicked.querySelector('.round-panel');
+      // Get all accordions in the same round panel
+      const allInRound = panel
+        ? []
+        : clicked.closest('.round-panel')?.querySelectorAll('.group-accordion') ?? [];
+
+      clicked.closest('.round-panel')?.querySelectorAll('.group-accordion').forEach(acc => {
+        const isTarget = acc === clicked;
+        const body = acc.querySelector('.group-accordion__body');
+        const icon = acc.querySelector('.group-accordion__icon');
+        if (isTarget) {
+          const opening = body.hidden;
+          body.hidden = !opening;
+          icon.textContent = opening ? '▲' : '▼';
+          acc.classList.toggle('group-accordion--open', opening);
+        } else {
+          body.hidden = true;
+          icon.textContent = '▼';
+          acc.classList.remove('group-accordion--open');
+        }
+      });
+    });
+  });
+
+  // Warn before navigating away with unsaved changes
+  window.addEventListener('beforeunload', e => {
+    if (_unsavedChanges) e.preventDefault();
+  });
+}
+
+function activateTab(selectedTab) {
+  const container = selectedTab.closest('[id]')?.parentElement ?? document;
+  container.querySelectorAll('.round-tab').forEach(t => {
+    t.setAttribute('aria-selected', 'false');
+    t.classList.remove('active');
+  });
+  container.querySelectorAll('.round-panel').forEach(p => p.classList.add('hidden'));
+  selectedTab.setAttribute('aria-selected', 'true');
+  selectedTab.classList.add('active');
+  const panel = document.getElementById(`round-panel-${selectedTab.dataset.round}`);
+  if (panel) panel.classList.remove('hidden');
+}
+
+function onScoreInput(e) {
+  const input = e.target;
+  const matchId = parseInt(input.dataset.match, 10);
+  const side = input.dataset.side;
+  const val = parseInt(input.value, 10);
+
+  if (!_pendingPredictions[matchId]) _pendingPredictions[matchId] = {};
+  _pendingPredictions[matchId][side] = val;
+  _unsavedChanges = true;
+
+  // Show unsaved indicator
+  const round = input.closest('.round-panel')?.dataset.round;
+  if (round) {
+    const indicator = document.getElementById(`unsaved-${round}`);
+    if (indicator) indicator.classList.remove('hidden');
+  }
+}
+
+async function saveRound(round, predMap, matches) {
+  const btn = document.getElementById(`save-btn-${round}`);
+  const roundMatches = matches.filter(m => m.round === round);
+  const toSave = [];
+
+  for (const m of roundMatches) {
+    const pending = _pendingPredictions[m.id];
+    const existing = predMap[m.id];
+
+    let homeScore = pending?.home ?? existing?.home_score ?? -1;
+    let awayScore = pending?.away ?? existing?.away_score ?? -1;
+
+    // Only save if both sides are filled
+    if (pending?.home !== undefined || pending?.away !== undefined) {
+      if (homeScore < 0 || awayScore < 0) continue; // skip incomplete
+      toSave.push({ match_id: m.id, home_score: homeScore, away_score: awayScore });
+    }
+  }
+
+  if (toSave.length === 0) {
+    showToast('No hay cambios nuevos para guardar', 'info');
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+
+  try {
+    await savePredictionsBulk(_currentUser.id, toSave);
+    // Update predMap
+    for (const p of toSave) predMap[p.match_id] = { ...predMap[p.match_id], ...p };
+    // Clear pending for this round
+    for (const m of roundMatches) delete _pendingPredictions[m.id];
+    _unsavedChanges = Object.keys(_pendingPredictions).length > 0;
+
+    const indicator = document.getElementById(`unsaved-${round}`);
+    if (indicator) indicator.classList.add('hidden');
+
+    showToast(`${toSave.length} predicciones guardadas`, 'success');
+  } catch (err) {
+    showToast(`Error al guardar: ${err.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar predicciones'; }
+  }
+}
+
+// --- Tournament Predictions ---------------------------------
+async function buildTournamentPredSection(teams, tournamentResult) {
+  const dl = _deadlines['tournament'];
+  const closed = deadlinePassed(dl?.deadline_at);
+  const existing = await getTournamentPrediction(_currentUser.id).catch(() => null);
+
+  // --- Build result feedback block ---
+  let resultFeedbackHtml = '';
+  if (existing && tournamentResult) {
+    const res = tournamentResult;
+    const hasAnyResult = res.champion_team_id || res.runner_up_team_id || res.top_scorer_name;
+    if (hasAnyResult) {
+      const teamsById = Object.fromEntries(teams.map(t => [t.id, t]));
+      const teamName = (id) => { const t = teamsById[id]; return t ? `${flagImg(t)} ${escapeHtml(t.name)}` : '—'; };
+
+      // Finalist set: champion + runner_up are both finalists
+      const finalistIds = new Set([res.champion_team_id, res.runner_up_team_id].filter(Boolean));
+
+      // Client-side pts (fallback if DB hasn't calculated yet)
+      let totalPts;
+      if (existing.calculated_at != null) {
+        totalPts = (existing.champion_points ?? 0)
+                 + (existing.runner_up_points ?? 0)
+                 + (existing.finalist_1_points ?? 0)
+                 + (existing.finalist_2_points ?? 0)
+                 + (existing.top_scorer_points ?? 0);
+      } else {
+        let pts = 0;
+        if (existing.champion_team_id && existing.champion_team_id === res.champion_team_id) pts += 8;
+        if (existing.runner_up_team_id && finalistIds.has(existing.runner_up_team_id)) pts += 4;
+        if (existing.finalist_2_team_id && finalistIds.has(existing.finalist_2_team_id)) pts += 4;
+        if (existing.top_scorer_name && res.top_scorer_name &&
+            existing.top_scorer_name.trim().toLowerCase() === res.top_scorer_name.trim().toLowerCase()) pts += 6;
+        totalPts = pts;
+      }
+
+      const champMatch  = existing.champion_team_id  === res.champion_team_id;
+      const fin1Match   = existing.runner_up_team_id  && finalistIds.has(existing.runner_up_team_id);
+      const fin2Match   = existing.finalist_2_team_id && finalistIds.has(existing.finalist_2_team_id);
+      const scorerMatch = existing.top_scorer_name && res.top_scorer_name &&
+                          existing.top_scorer_name.trim().toLowerCase() === res.top_scorer_name.trim().toLowerCase();
+
+      const row = (label, predHtml, pts, matched) => `
+        <div class="tourn-result-row ${matched ? 'tourn-result-row--hit' : 'tourn-result-row--miss'}">
+          <span class="tourn-result-label">${label}</span>
+          <span class="tourn-result-pred">${predHtml}</span>
+          <span class="tourn-result-icon">${matched ? '✅' : '✗'}</span>
+          <span class="tourn-result-pts ${pts > 0 ? 'points--positive' : 'points--zero'}">${matched ? `+${fmtPts(pts)} pts` : '—'}</span>
+        </div>`;
+
+      resultFeedbackHtml = `
+        <div class="tourn-result-feedback">
+          <div class="tourn-result-feedback__title">
+            Resultado oficial
+            <span class="tourn-result-total ${totalPts > 0 ? 'points--positive' : 'points--zero'}">+${fmtPts(totalPts)} pts total</span>
+          </div>
+          <div class="tourn-result-feedback__body">
+            ${row('🥇 Campeón',    existing.champion_team_id  ? teamName(existing.champion_team_id)  : '—', 8, champMatch)}
+            ${row('🏅 Finalista A', existing.runner_up_team_id  ? teamName(existing.runner_up_team_id)  : '—', 4, fin1Match)}
+            ${row('🏅 Finalista B', existing.finalist_2_team_id ? teamName(existing.finalist_2_team_id) : '—', 4, fin2Match)}
+            ${row('⚽ Goleador',    existing.top_scorer_name   ? escapeHtml(existing.top_scorer_name)   : '—', 6, scorerMatch)}
+          </div>
+          <div class="tourn-result-official">
+            <strong>Oficial:</strong>
+            🥇 ${teamName(res.champion_team_id)} · 🏅 ${teamName(res.runner_up_team_id)} · ⚽ ${res.top_scorer_name ? escapeHtml(res.top_scorer_name) : '—'}
+          </div>
+        </div>`;
+    }
+  }
+
+  // Build custom flag-select HTML for a list of teams
+  function buildFlagSelect(name, teamsList, selectedId) {
+    const selected = teamsList.find(t => t.id === selectedId);
+    const display = selected
+      ? `${flagImg(selected)} ${escapeHtml(selected.name)}`
+      : '— Seleccionar —';
+    const options = teamsList.map(t =>
+      `<div class="flag-option" data-value="${t.id}" role="option">
+        ${flagImg(t)} ${escapeHtml(t.name)}
+      </div>`
+    ).join('');
+    return `
+      <div class="flag-select ${closed ? 'flag-select--disabled' : ''}" data-name="${escapeHtml(name)}">
+        <input type="hidden" name="${escapeHtml(name)}" value="${selectedId ?? ''}">
+        <button type="button" class="flag-select__trigger" ${closed ? 'disabled' : ''} aria-haspopup="listbox">
+          <span class="flag-select__value">${display}</span>
+          <span class="flag-select__arrow">▾</span>
+        </button>
+        <div class="flag-select__dropdown" role="listbox" hidden>
+          <div class="flag-option flag-option--empty" data-value="" role="option">— Seleccionar —</div>
+          ${options}
+        </div>
+      </div>`;
+  }
+
+  return `
+    <section class="tournament-preds" id="tournament-preds">
+      <div class="tournament-preds__header">
+        <h2 class="section-title">🏆 Predicciones del Torneo</h2>
+        ${!closed ? `<button type="submit" form="tournament-form" class="btn btn--gold btn--sm">💾 Guardar</button>` : ''}
+      </div>
+      ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
+        ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
+      </div>` : ''}
+      ${resultFeedbackHtml}
+      <form id="tournament-form" class="tournament-form ${closed ? 'form--locked' : ''}">
+        <div class="form-group">
+          <label>🥇 Campeón (+8 pts)</label>
+          ${buildFlagSelect('champion_team_id', teams, existing?.champion_team_id)}
+        </div>
+        <div class="form-group form-group--finalists">
+          <label>🏅 Finalistas — los 2 equipos que jugarán la final (+4 pts por finalista)</label>
+          <div class="finalists-row">
+            ${buildFlagSelect('finalist_1_team_id', teams, existing?.runner_up_team_id)}
+            ${buildFlagSelect('finalist_2_team_id', teams, existing?.finalist_2_team_id)}
+          </div>
+        </div>
+        <div class="form-group">
+          <label>⚽ Máximo Goleador (+6 pts)</label>
+          <input type="text" name="top_scorer_name" 
+            value="${escapeHtml(existing?.top_scorer_name ?? '')}"
+            placeholder="Nombre del jugador" 
+            maxlength="100"
+            ${closed ? 'disabled' : ''}>
+        </div>
+      </form>
+    </section>
+    <div class="phases-divider" style="display:none">
+      <span class="phases-divider__label">Predicciones por fase</span>
+    </div>`;
+}
+
+function bindTournamentForm(container) {
+  const form = container.querySelector('#tournament-form');
+  if (!form) return;
+
+  // Wire custom flag-selects — scope to tournament panel only to avoid
+  // double-binding with classification panel flag-selects
+  const scope = container.querySelector('#pred-panel-torneo') ?? container;
+  scope.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
+    const trigger = sel.querySelector('.flag-select__trigger');
+    const dropdown = sel.querySelector('.flag-select__dropdown');
+    const hidden = sel.querySelector('input[type="hidden"]');
+    const valueSpan = sel.querySelector('.flag-select__value');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      // Close all other dropdowns
+      document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+      dropdown.hidden = isOpen;
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const opt = e.target.closest('.flag-option');
+      if (!opt) return;
+      hidden.value = opt.dataset.value;
+      valueSpan.innerHTML = opt.innerHTML;
+      dropdown.hidden = true;
+    });
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector('[type="submit"]');
+    const fd = new FormData(form);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+    try {
+      await upsertTournamentPrediction(_currentUser.id, {
+        champion_team_id:    parseInt(fd.get('champion_team_id'))    || null,
+        finalist_1_team_id:  parseInt(fd.get('finalist_1_team_id')) || null,
+        finalist_2_team_id:  parseInt(fd.get('finalist_2_team_id')) || null,
+        top_scorer_name:     fd.get('top_scorer_name'),
+      });
+      showToast('Predicciones del torneo guardadas', 'success');
+    } catch (err) {
+      showToast(`Error: ${err.message}`, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar predicciones del torneo'; }
+    }
+  });
+}
+
+// --- Group Classification -----------------------------------
+function buildGroupClassificationSection(groups, allTeams, groupPosPreds, groupPosResults) {
+  const dl = _deadlines['group'];
+  const closed = deadlinePassed(dl?.deadline_at);
+
+  // Index existing predictions by group_id
+  const predsByGroup = {};
+  for (const p of groupPosPreds) predsByGroup[p.group_id] = p;
+
+  // Index official results by group_id
+  const resultsByGroup = {};
+  for (const r of (groupPosResults ?? [])) resultsByGroup[r.group_id] = r;
+
+  function buildTeamSelect(name, teamsList, selectedId) {
+    const sel = teamsList.find(t => t.id === selectedId);
+    const display = sel ? `${flagImg(sel)} ${escapeHtml(sel.name)}` : '— Seleccionar —';
+    const options = teamsList.map(t =>
+      `<div class="flag-option" data-value="${t.id}" role="option">${flagImg(t)} ${escapeHtml(t.name)}</div>`
+    ).join('');
+    return `
+      <div class="flag-select ${closed ? 'flag-select--disabled' : ''}" data-name="${escapeHtml(name)}">
+        <input type="hidden" name="${escapeHtml(name)}" value="${selectedId ?? ''}">
+        <button type="button" class="flag-select__trigger" ${closed ? 'disabled' : ''} aria-haspopup="listbox">
+          <span class="flag-select__value">${display}</span>
+          <span class="flag-select__arrow">▾</span>
+        </button>
+        <div class="flag-select__dropdown" role="listbox" hidden>
+          <div class="flag-option flag-option--empty" data-value="" role="option">— Seleccionar —</div>
+          ${options}
+        </div>
+      </div>`;
+  }
+
+  let html = `
+    <section class="group-classification">
+      <div class="group-classification__intro">
+        <p>Predice el orden final de cada grupo. <strong>+0.5 pts</strong> por cada posición acertada. <strong>+1 pt extra</strong> por acertar las 4 posiciones de un grupo.</p>
+      </div>
+      ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
+        ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
+      </div>` : ''}
+      <div class="group-classification__grid">`;
+
+  // Build a fast lookup of teams by id
+  const teamsById = Object.fromEntries(allTeams.map(t => [t.id, t]));
+
+  for (const group of groups) {
+    const teamIds = (group.group_teams ?? []).map(gt => gt.team_id).filter(Boolean);
+    const teamsList = teamIds
+      .map(id => teamsById[id])
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const pred = predsByGroup[group.id] ?? {};
+    const hasOfficialResult = resultsByGroup[group.id] !== undefined;
+
+    // Points badge: prefer stored pts if already calculated, otherwise compute client-side
+    const hasPred = pred.pos_1_team_id != null || pred.pos_2_team_id != null
+                  || pred.pos_3_team_id != null || pred.pos_4_team_id != null;
+    let ptsEarned = null;
+    if (hasOfficialResult && hasPred) {
+      if (pred.calculated_at != null) {
+        ptsEarned = pred.points ?? 0;
+      } else {
+        // Client-side fallback when DB trigger hasn't run yet
+        const res = resultsByGroup[group.id];
+        const posKeys = ['pos_1_team_id', 'pos_2_team_id', 'pos_3_team_id', 'pos_4_team_id'];
+        let correct = 0;
+        posKeys.forEach(k => { if (pred[k] && res[k] && pred[k] === res[k]) correct++; });
+        ptsEarned = correct * 0.5 + (correct === 4 ? 2.0 : 0);
+      }
+    }
+    const ptsBadge = ptsEarned !== null
+      ? `<span class="group-classif-pts ${ptsEarned > 0 ? 'group-classif-pts--pos' : ''}">${ptsEarned > 0 ? '+' : ''}${fmtPts(ptsEarned)} pts</span>`
+      : (hasOfficialResult ? `<span class="group-classif-pts group-classif-pts--pending">—</span>` : '');
+
+    html += `
+      <div class="group-classif-card">
+        <div class="group-classif-card__title">
+          Grupo ${escapeHtml(group.letter)}
+          ${ptsBadge}
+        </div>
+        <form class="group-classif-form" data-group-id="${group.id}">
+          <div class="group-classif-positions">
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥇 1º</span>
+              ${buildTeamSelect('pos_1', teamsList, pred.pos_1_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥈 2º</span>
+              ${buildTeamSelect('pos_2', teamsList, pred.pos_2_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">🥉 3º</span>
+              ${buildTeamSelect('pos_3', teamsList, pred.pos_3_team_id ?? null)}
+            </div>
+            <div class="group-classif-pos">
+              <span class="group-classif-pos__label">4º</span>
+              ${buildTeamSelect('pos_4', teamsList, pred.pos_4_team_id ?? null)}
+            </div>
+          </div>
+          ${!closed ? `<button type="submit" class="btn btn--sm btn--primary group-classif-save" data-label="Guardar Grupo ${escapeHtml(group.letter)}">💾 Guardar Grupo ${escapeHtml(group.letter)}</button>` : ''}
+        </form>
+      </div>`;
+  }
+
+  html += `</div></section>`;
+  return html;
+}
+
+function bindGroupClassificationForms(container) {
+  const panel = container.querySelector('#pred-panel-clasificacion');
+  if (!panel) return;
+
+  // Wire flag-select dropdowns (same pattern as bindTournamentForm)
+  panel.querySelectorAll('.flag-select:not(.flag-select--disabled)').forEach(sel => {
+    const trigger   = sel.querySelector('.flag-select__trigger');
+    const dropdown  = sel.querySelector('.flag-select__dropdown');
+    const hidden    = sel.querySelector('input[type="hidden"]');
+    const valueSpan = sel.querySelector('.flag-select__value');
+
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      document.querySelectorAll('.flag-select__dropdown').forEach(d => { d.hidden = true; });
+      dropdown.hidden = isOpen;
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const opt = e.target.closest('.flag-option');
+      if (!opt) return;
+      hidden.value = opt.dataset.value;
+      valueSpan.innerHTML = opt.innerHTML;
+      dropdown.hidden = true;
+    });
+  });
+
+  // Wire form submits
+  panel.querySelectorAll('.group-classif-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const groupId = parseInt(form.dataset.groupId, 10);
+      const fd  = new FormData(form);
+      const btn = form.querySelector('.group-classif-save');
+      const positions = [
+        parseInt(fd.get('pos_1')) || null,
+        parseInt(fd.get('pos_2')) || null,
+        parseInt(fd.get('pos_3')) || null,
+        parseInt(fd.get('pos_4')) || null,
+      ];
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+      try {
+        await upsertGroupPositionPrediction(_currentUser.id, groupId, positions);
+        showToast('Clasificación guardada', 'success');
+      } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = `💾 ${btn.dataset.label ?? 'Guardar'}`; }
+      }
+    });
+  });
+}

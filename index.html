@@ -1,62 +1,347 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>elporrazo.es — Próximamente</title>
-    <style>
-        *, *::before, *::after {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Porra del Mundial 2026 — Inicia sesión o regístrate para participar" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Porra Mundial 2026 — Acceso</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* ---- Login page specific styles ---- */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(79,142,247,0.12) 0%, transparent 60%),
+        var(--clr-bg-0);
+    }
+    .login-hero {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    /* Override header logo styles for the login page hero */
+    .login-hero .app-header__logo {
+      display: inline-flex;
+      justify-content: center;
+      white-space: normal;
+      flex-wrap: wrap;
+      text-align: center;
+    }
+    .login-hero__emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+    .login-hero__title {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--clr-gold), var(--clr-accent));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .login-hero__sub { color: var(--clr-text-muted); font-size: 0.95rem; }
 
-        html, body {
-            width: 100%;
-            height: 100%;
-        }
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--clr-border);
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--clr-text-muted);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .auth-tab.active {
+      color: var(--clr-accent);
+      background: rgba(233,69,96,0.08);
+    }
+    .auth-form-panel { padding: 28px 24px; }
 
-        body {
-            background: #000;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            min-height: 100vh;
-            min-height: 100dvh;
-        }
+    .login-footer {
+      margin-top: 24px;
+      font-size: 0.78rem;
+      color: var(--clr-text-muted);
+      text-align: center;
+    }
+    .login-footer a { color: var(--clr-blue); }
 
-        /* Portrait / móvil vertical: centrado con contain */
-        .promo-img {
-            display: block;
-            width: 100%;
-            max-width: 100vw;
-            height: auto;
-            max-height: 100vh;
-            max-height: 100dvh;
-            object-fit: contain;
-        }
+    .features-row {
+      display: flex;
+      gap: 20px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .feature-chip {
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      color: var(--clr-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-        /* Landscape: expande a ancho completo sin límite de altura */
-        @media (orientation: landscape) {
-            body {
-                align-items: flex-start;
-            }
-            .promo-img {
-                width: 100%;
-                max-width: none;
-                height: auto;
-                max-height: none;
-                object-fit: fill;
-            }
-        }
-    </style>
+    .divider-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: var(--clr-text-muted);
+      font-size: 0.8rem;
+    }
+    .divider-text::before, .divider-text::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--clr-border);
+    }
+
+    /* ---- Required mark ---- */
+    .required-mark {
+      color: var(--clr-accent);
+      margin-left: 2px;
+      font-weight: 700;
+    }
+    .required-note {
+      font-size: 0.75rem;
+      color: var(--clr-text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* ---- Password toggle ---- */
+    /* ---- Forgot result boxes ---- */
+    .forgot-result-box {
+      text-align: center;
+      padding: 8px 0;
+    }
+    .forgot-result-box p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--clr-text);
+    }
+  </style>
 </head>
-<body>
-    <img
-        class="promo-img"
-        src="proximamente.png"
-        alt="elporrazo.es — Próximamente"
-        loading="eager"
-    >
+<body data-page="login">
+  <main class="login-page">
+    <!-- Hero -->
+    <div class="login-hero">
+      <span class="app-header__logo">
+        <img src="images/logo.png" alt="" class="app-header__logo-img_g" aria-hidden="true">
+      <h1 class="login-hero__title">Porra Mundial 2026</h1></span>
+      <p class="login-hero__sub">Predice, compite y sube en el ranking</p>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="auth-card" role="region" aria-label="Formulario de acceso">
+      <!-- Tabs -->
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" data-tab="login"    role="tab" aria-selected="true"  aria-controls="panel-login">Iniciar sesión</button>
+        <button class="auth-tab"        data-tab="register" role="tab" aria-selected="false" aria-controls="panel-register">Registrarse</button>
+        <button class="auth-tab"        data-tab="forgot"   role="tab" aria-selected="false" aria-controls="panel-forgot">Recuperar</button>
+      </div>
+
+      <!-- ======== LOGIN PANEL ======== -->
+      <div id="panel-login" class="auth-form-panel" role="tabpanel">
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" name="email"
+              placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <div class="password-wrapper">
+              <input type="password" id="login-password" name="password"
+                placeholder="••••••••" autocomplete="current-password" required />
+              <button type="button" class="password-toggle" aria-label="Mostrar contraseña" data-target="login-password">
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%">
+            ⚡ Entrar
+          </button>
+        </form>
+      </div>
+
+      <!-- ======== REGISTER PANEL ======== -->
+      <div id="panel-register" class="auth-form-panel hidden" role="tabpanel">
+        <form id="register-form" novalidate>
+          <div class="form-group">
+            <label for="reg-username">Nombre de usuario <span class="required-mark" title="Obligatorio">*</span></label>
+            <input type="text" id="reg-username" name="username"
+              placeholder="pablito_futbol" minlength="3" maxlength="30" required
+              autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Correo electrónico <span class="required-mark">*</span></label>
+            <input type="email" id="reg-email" name="email"
+              placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-phone">Teléfono <span class="required-mark">*</span></label>
+            <input type="tel" id="reg-phone" name="phone"
+              placeholder="+34 600 000 000" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Contraseña <span class="required-mark">*</span> <span style="color:var(--clr-text-muted);font-size:0.75rem">(mín. 6 caracteres)</span></label>
+            <div class="password-wrapper">
+              <input type="password" id="reg-password" name="password"
+                placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+              <button type="button" class="password-toggle" aria-label="Mostrar contraseña" data-target="reg-password">
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-confirm">Confirmar contraseña <span class="required-mark">*</span></label>
+            <div class="password-wrapper">
+              <input type="password" id="reg-confirm" name="confirm_password"
+                placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+              <button type="button" class="password-toggle" aria-label="Mostrar contraseña" data-target="reg-confirm">
+                <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%">
+            🚀 Crear cuenta
+          </button>
+        </form>
+        <p class="required-note" style="margin-top:12px"><span class="required-mark">*</span> Todos los campos son obligatorios</p>
+        <p style="font-size:0.75rem;color:var(--clr-text-muted);margin-top:12px">
+          Al registrarte aceptas las reglas del juego. Tus predicciones son privadas hasta que se cierre el plazo correspondiente.
+        </p>
+      </div>
+
+      <!-- ======== FORGOT PANEL ======== -->
+      <div id="panel-forgot" class="auth-form-panel hidden" role="tabpanel">
+
+        <!-- Step 1: Email -->
+        <div id="forgot-step-1">
+          <p style="font-size:0.88rem;color:var(--clr-text-muted);margin-bottom:16px">
+            Introduce tu correo electrónico para continuar.
+          </p>
+          <form id="forgot-form" novalidate>
+            <div class="form-group">
+              <label for="forgot-email">Correo electrónico <span class="required-mark">*</span></label>
+              <input type="email" id="forgot-email" name="email"
+                placeholder="tu@email.com" autocomplete="email" required />
+            </div>
+            <button type="submit" class="btn btn--outline" style="width:100%">
+              Continuar →
+            </button>
+          </form>
+        </div>
+
+        <!-- Step 2a: Email enviado (usuario confirmado) -->
+        <div id="forgot-step-sent" class="hidden forgot-result-box">
+          <div style="font-size:2.5rem;margin-bottom:12px">&#x1F4E7;</div>
+          <p>Hemos enviado un enlace de restablecimiento a<br><strong id="forgot-email-sent"></strong></p>
+          <p style="font-size:0.82rem;color:var(--clr-text-muted);margin-top:8px">
+            Haz clic en el enlace del email para establecer tu nueva contraseña.<br>Revisa también la carpeta de spam.
+          </p>
+          <button type="button" id="forgot-back-sent" class="btn btn--ghost" style="width:100%;margin-top:16px">← Volver</button>
+        </div>
+
+        <!-- Step 2b: Usuario sin confirmar -->
+        <div id="forgot-step-unconfirmed" class="hidden forgot-result-box">
+          <div style="font-size:2.5rem;margin-bottom:12px">⚠️</div>
+          <p>La cuenta <strong id="forgot-email-unconfirmed"></strong><br>aún no ha sido confirmada.</p>
+          <p style="font-size:0.82rem;color:var(--clr-text-muted);margin-top:8px">
+            Te hemos reenviado el email de confirmación.<br>Confírmala primero para poder acceder.
+          </p>
+          <button type="button" id="forgot-back-unconfirmed" class="btn btn--ghost" style="width:100%;margin-top:16px">← Volver</button>
+        </div>
+
+        <!-- Step 3: Nueva contraseña (tras clic en enlace de recuperación) -->
+        <div id="forgot-step-newpw" class="hidden">
+          <p style="font-size:0.88rem;color:var(--clr-text-muted);margin-bottom:16px">
+            Introduce tu nueva contraseña.
+          </p>
+          <form id="newpw-form" novalidate>
+            <div class="form-group">
+              <label for="newpw-password">Nueva contraseña <span class="required-mark">*</span></label>
+              <div class="password-wrapper">
+                <input type="password" id="newpw-password" name="password"
+                  placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+                <button type="button" class="password-toggle" aria-label="Mostrar contraseña" data-target="newpw-password">
+                  <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-off-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newpw-confirm">Confirmar contraseña <span class="required-mark">*</span></label>
+              <div class="password-wrapper">
+                <input type="password" id="newpw-confirm" name="confirm_password"
+                  placeholder="••••••••" minlength="6" autocomplete="new-password" required />
+                <button type="button" class="password-toggle" aria-label="Mostrar contraseña" data-target="newpw-confirm">
+                  <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-off-icon" style="display:none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn--primary" style="width:100%">
+              🔒 Guardar nueva contraseña
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Features row -->
+    <div class="features-row" aria-label="Características">
+      <div class="feature-chip">⚽ 106 partidos</div>
+      <div class="feature-chip">🔮 15 Predicciones extras</div>
+      <div class="feature-chip">🏆 Sistema de puntos</div>
+      <div class="feature-chip">📊 Ranking y Estadísticas</div>
+      <div class="feature-chip">🏅 Logros</div>
+    </div>
+
+    <footer class="login-footer">
+      <p>Porra Mundial 2026 &copy; 2026 — Para uso privado · Tecnología: <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a></p>
+    </footer>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+  <script>
+    document.querySelectorAll('.password-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var input = document.getElementById(btn.dataset.target);
+        var isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        btn.querySelector('.eye-icon').style.display = isPassword ? 'none' : '';
+        btn.querySelector('.eye-off-icon').style.display = isPassword ? '' : 'none';
+        btn.setAttribute('aria-label', isPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      });
+    });
+  </script>
 </body>
 </html>

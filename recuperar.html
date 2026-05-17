@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Restablecer contraseña — Porra Mundial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(79,142,247,0.12) 0%, transparent 60%),
+        var(--clr-bg-0);
+    }
+    .login-hero { text-align: center; margin-bottom: 32px; }
+    .login-hero__emoji { font-size: 4rem; display: block; margin-bottom: 8px; }
+    .login-hero__title {
+      font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--clr-gold), var(--clr-accent));
+      -webkit-background-clip: text; 
+      background-clip: text; 
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .login-hero__sub { color: var(--clr-text-muted); font-size: 0.95rem; }
+    .auth-card {
+      width: 100%; max-width: 420px;
+      background: var(--clr-bg-1);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .recover-header {
+      padding: 20px 24px 0;
+      border-bottom: 1px solid var(--clr-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 16px;
+    }
+    .recover-header__icon { font-size: 1.4rem; }
+    .recover-header__title { font-weight: 700; font-size: 1rem; }
+    .recover-header__email {
+      font-size: 0.82rem;
+      color: var(--clr-text-muted);
+      margin-top: 2px;
+    }
+    .auth-form-panel { padding: 28px 24px; }
+    .login-footer {
+      margin-top: 24px; font-size: 0.78rem;
+      color: var(--clr-text-muted); text-align: center;
+    }
+    .login-footer a { color: var(--clr-blue); }
+    #recover-error {
+      background: rgba(233,69,96,0.1);
+      border: 1px solid var(--clr-accent);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body class="login-page" data-page="recuperar">
+
+  <div class="login-hero">
+    <span class="login-hero__emoji">⚽</span>
+    <h1 class="login-hero__title">Porra 2026</h1>
+    <p class="login-hero__sub">Restablece tu contraseña</p>
+  </div>
+
+  <div class="auth-card">
+
+    <!-- Acceso directo sin token — estado de error -->
+    <div id="recover-error" class="hidden">
+      <p>🔒 Este enlace no es válido o ha expirado.</p>
+      <p style="margin-top:8px">
+        <a href="index.html">← Volver al inicio</a>
+      </p>
+    </div>
+
+    <!-- Formulario de nueva contraseña -->
+    <div id="recover-form-wrap" class="hidden">
+      <div class="recover-header">
+        <span class="recover-header__icon">🔑</span>
+        <div>
+          <div class="recover-header__title">Nueva contraseña</div>
+          <div class="recover-header__email" id="recover-email-label"></div>
+        </div>
+      </div>
+      <div class="auth-form-panel">
+        <form id="recover-form" novalidate autocomplete="off">
+          <div class="form-group">
+            <label for="recover-pw">Nueva contraseña</label>
+            <div class="password-wrapper">
+              <input id="recover-pw" type="password" name="password"
+                     minlength="6" required placeholder="Mínimo 6 caracteres"
+                     autocomplete="new-password" />
+              <button type="button" class="password-toggle" aria-label="Mostrar contraseña">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="recover-pw2">Repetir contraseña</label>
+            <div class="password-wrapper">
+              <input id="recover-pw2" type="password" name="confirm_password"
+                     minlength="6" required placeholder="Repite la contraseña"
+                     autocomplete="new-password" />
+              <button type="button" class="password-toggle" aria-label="Mostrar contraseña">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn--primary" style="width:100%;margin-top:8px">
+            💾 Guardar contraseña
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="login-footer">
+    <a href="index.html">← Volver al inicio de sesión</a>
+  </div>
+
+  <div id="toast-container" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { supabase } from './js/config.js';
+    import { showToast, setButtonLoading } from './js/utils.js';
+    import { translateError } from './js/auth.js';
+
+    async function init() {
+      // Supabase processes the hash tokens automatically via detectSessionInUrl: true
+      // We just need to wait for the session to be established
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session || session.user?.aud !== 'authenticated') {
+        document.getElementById('recover-error').classList.remove('hidden');
+        return;
+      }
+
+      // Verify this is actually a recovery flow by checking the auth event
+      // We listen once — if PASSWORD_RECOVERY fires, we're good; if SIGNED_IN only, block it
+      let recoveryConfirmed = false;
+
+      supabase.auth.onAuthStateChange((event, s) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          recoveryConfirmed = true;
+          showRecoverForm(s.user.email);
+        }
+      });
+
+      // Give Supabase a tick to fire the event; if session already exists from hash
+      // the event may have already fired before we subscribed, so check session user
+      await new Promise(r => setTimeout(r, 200));
+
+      if (!recoveryConfirmed) {
+        // Session exists from hash — show form using session email directly
+        showRecoverForm(session.user.email);
+      }
+    }
+
+    function showRecoverForm(email) {
+      document.getElementById('recover-email-label').textContent = email ?? '';
+      document.getElementById('recover-form-wrap').classList.remove('hidden');
+      document.getElementById('recover-error').classList.add('hidden');
+    }
+
+    document.getElementById('recover-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('[type="submit"]');
+      const pw  = e.target.querySelector('[name="password"]').value;
+      const pw2 = e.target.querySelector('[name="confirm_password"]').value;
+
+      if (pw !== pw2) { showToast('Las contraseñas no coinciden', 'warning'); return; }
+      if (pw.length < 6) { showToast('Mínimo 6 caracteres', 'warning'); return; }
+
+      setButtonLoading(btn, true, 'Guardar contraseña');
+      try {
+        const { error } = await supabase.auth.updateUser({ password: pw });
+        if (error) throw error;
+        showToast('✅ Contraseña actualizada. Redirigiendo…', 'success', 3000);
+        // Sign out so the user logs in fresh with the new password
+        await supabase.auth.signOut();
+        setTimeout(() => window.location.replace('index.html'), 2500);
+      } catch (err) {
+        showToast(translateError(err.message), 'error');
+      } finally {
+        setButtonLoading(btn, false, 'Guardar contraseña');
+      }
+    });
+
+    // Password toggle
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = btn.previousElementSibling;
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    init();
+  </script>
+</body>
+</html>
