@@ -3,6 +3,8 @@
 // =============================================================
 import { supabase } from './config.js';
 
+const PAGE_SIZE = 1000;
+
 // ---- Groups & Teams -----------------------------------------
 export async function getGroups() {
   const { data, error } = await supabase
@@ -416,19 +418,31 @@ export async function deleteUsers(userIds) {
  * RLS enforces this only returns data once the 'tournament' deadline has passed.
  */
 export async function getAllTournamentPredictions() {
-  const { data, error } = await supabase
-    .from('tournament_predictions')
-    .select(`
-      user_id,
-      champion_team_id, champion_points,
-      runner_up_team_id, runner_up_points,
-      finalist_2_team_id, finalist_1_points, finalist_2_points,
-      top_scorer_name, top_scorer_team_id, top_scorer_points,
-      calculated_at,
-      user:user_id(id, username)
-    `);
-  if (error) throw error;
-  return data ?? [];
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('tournament_predictions')
+      .select(`
+        user_id,
+        champion_team_id, champion_points,
+        runner_up_team_id, runner_up_points,
+        finalist_2_team_id, finalist_1_points, finalist_2_points,
+        top_scorer_name, top_scorer_team_id, top_scorer_points,
+        calculated_at,
+        user:user_id(id, username)
+      `)
+      .order('user_id')
+      .range(from, to);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 // ---- Public: all users' predictions (read after deadline) --
@@ -445,12 +459,24 @@ export async function getAllPredictionsForRound(round) {
   if (matchErr) throw matchErr;
   if (!matchData?.length) return [];
 
-  const { data, error } = await supabase
-    .from('predictions')
-    .select('user_id, match_id, home_score, away_score, points, is_exact, is_partial, calculated_at, user:user_id(id, username)')
-    .in('match_id', matchData.map(m => m.id));
-  if (error) throw error;
-  return data ?? [];
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('predictions')
+      .select('id, user_id, match_id, home_score, away_score, points, is_exact, is_partial, calculated_at, user:user_id(id, username)')
+      .in('match_id', matchData.map(m => m.id))
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 /**
@@ -458,11 +484,23 @@ export async function getAllPredictionsForRound(round) {
  * RLS enforces this only returns data once the 'group' deadline has passed.
  */
 export async function getAllGroupPositionPredictionsAll() {
-  const { data, error } = await supabase
-    .from('group_position_predictions')
-    .select('user_id, group_id, pos_1_team_id, pos_2_team_id, pos_3_team_id, pos_4_team_id, points, calculated_at, user:user_id(id, username)');
-  if (error) throw error;
-  return data ?? [];
+  const rows = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('group_position_predictions')
+      .select('id, user_id, group_id, pos_1_team_id, pos_2_team_id, pos_3_team_id, pos_4_team_id, points, calculated_at, user:user_id(id, username)')
+      .order('id')
+      .range(from, to);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return rows;
 }
 
 // ---- ADMIN: Tournament results ------------------------------

@@ -193,7 +193,7 @@ function buildGroupMatchesSection(matches, groups, allPreds) {
     if (!gMatches.length) return '';
     const cardsHtml = gMatches.map(m => buildMatchCard(m, predsByMatch[m.id] ?? [])).join('');
     return `
-      <details class="compare-group-accordion" open>
+      <details class="compare-group-accordion">
         <summary class="compare-group-summary">Grupo ${escapeHtml(g.letter)}</summary>
         <div class="compare-group-body">${cardsHtml}</div>
       </details>`;
@@ -349,20 +349,24 @@ function buildGroupClassifSection(groups, teamsById, allGroupPreds, groupPosResu
     }).join('');
 
     return `
-      <div class="compare-classif-card">
-        <h4 class="compare-classif-title">Grupo ${escapeHtml(group.letter)}</h4>
-        <div class="compare-classif-scroll">
-          <table class="compare-classif-table">
-            <thead>
-              <tr>
-                <th>Usuario</th>
-                ${posLabels.map(l => `<th>${l}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>${resultRow}${userRows}</tbody>
-          </table>
+      <details class="compare-group-accordion compare-classif-accordion">
+        <summary class="compare-group-summary">Grupo ${escapeHtml(group.letter)}</summary>
+        <div class="compare-group-body">
+          <div class="compare-classif-card">
+            <div class="compare-classif-scroll">
+              <table class="compare-classif-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    ${posLabels.map(l => `<th>${l}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>${resultRow}${userRows}</tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>`;
+      </details>`;
   }).join('');
 
   return `<div class="compare-classif">${cards}</div>`;
