@@ -208,17 +208,32 @@
 .admin-match-row--done { border-color: var(--clr-green); }
 .admin-match-info {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-bottom: 10px;
+  justify-content: space-between;
   font-size: 0.78rem;
   color: var(--clr-text-muted);
 }
+.admin-match-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
 .admin-result-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.admin-result-grid {
   display: grid;
-  grid-template-columns: 1fr auto auto auto 1fr auto;
+  grid-template-columns: 1fr auto auto auto 1fr;
   align-items: center;
   gap: 6px;
+}
+.admin-save-btn {
+  flex-shrink: 0;
 }
 .admin-result-form .team-label {
   overflow: hidden;
@@ -394,8 +409,17 @@ details[open] .admin-round-summary::before { transform: rotate(90deg); }
   .admin-tabs { padding: 0 8px; gap: 0; }
   .admin-tab { padding: 10px 10px; font-size: 0.76rem; }
 
-  /* Result form stack */
-  .admin-result-form { flex-direction: column; align-items: flex-start; }
+  /* Keep action visible in the top row and compact on narrow screens */
+  .admin-match-info { align-items: flex-start; }
+  .admin-match-meta { gap: 6px; }
+  .admin-save-btn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+  .admin-result-grid {
+    grid-template-columns: minmax(88px, 1fr) auto auto auto minmax(88px, 1fr);
+  }
 
   /* Hide extra table columns */
   .admin-table th:nth-child(n+5),

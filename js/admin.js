@@ -192,21 +192,25 @@ async function renderResultsByPhaseSubpanel(panel) {
 
         html += `
           <div class="admin-match-row ${res ? 'admin-match-row--done' : ''}" id="admin-match-${m.id}">
-            <div class="admin-match-info">
-              <span class="match-datetime">${formatDate(m.match_datetime)}</span>
-              ${m.group ? `<span class="match-group">Grupo ${escapeHtml(m.group.letter)}</span>` : ''}
-            </div>
             <form class="admin-result-form" data-match="${m.id}" data-round="${escapeHtml(round)}">
-              <span class="team-label">${homeFlag} ${escapeHtml(homeTeam)}</span>
-              <input type="number" name="home_score" min="0" max="99" class="score-input admin-score"
-                value="${res ? res.home_score : ''}" placeholder="–" required>
-              <span class="sep">–</span>
-              <input type="number" name="away_score" min="0" max="99" class="score-input admin-score"
-                value="${res ? res.away_score : ''}" placeholder="–" required>
-              <span class="team-label">${awayFlag} ${escapeHtml(awayTeam)}</span>
-              <button type="submit" class="btn btn--sm btn--primary">
-                ${res ? '✏️ Actualizar' : '✅ Guardar'}
-              </button>
+              <div class="admin-match-info">
+                <div class="admin-match-meta">
+                  <span class="match-datetime">${formatDate(m.match_datetime)}</span>
+                  ${m.group ? `<span class="match-group">Grupo ${escapeHtml(m.group.letter)}</span>` : ''}
+                </div>
+                <button type="submit" class="btn btn--xs btn--primary admin-save-btn">
+                  ${res ? '✏️ Actualizar' : '✅ Guardar'}
+                </button>
+              </div>
+              <div class="admin-result-grid">
+                <span class="team-label">${homeFlag} ${escapeHtml(homeTeam)}</span>
+                <input type="number" name="home_score" min="0" max="99" class="score-input admin-score"
+                  value="${res ? res.home_score : ''}" placeholder="–" required>
+                <span class="sep">–</span>
+                <input type="number" name="away_score" min="0" max="99" class="score-input admin-score"
+                  value="${res ? res.away_score : ''}" placeholder="–" required>
+                <span class="team-label">${awayFlag} ${escapeHtml(awayTeam)}</span>
+              </div>
             </form>
           </div>`;
       }
