@@ -15,6 +15,7 @@ import {
 } from './utils.js';
 import { ROUNDS } from './config.js';
 import { initAdminCompare } from './compare.js';
+import { initRanking } from './ranking.js';
 
 // ============================================================
 // FLAG-SELECT HELPERS (shared with admin forms)
@@ -108,8 +109,13 @@ async function loadAdminPanel(panel) {
     case 'matches':    await renderAdminMatchesTab(); break;
     case 'deadlines':  await renderAdminDeadlinesTab(); break;
     case 'predictions': await renderAdminPredictionsTab(); break;
+    case 'ranking':    await renderAdminRankingTab(); break;
     case 'users':      await renderAdminUsersTab(); break;
   }
+}
+
+async function renderAdminRankingTab() {
+  await initRanking(_adminUser);
 }
 
 // ============================================================

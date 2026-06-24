@@ -49,6 +49,10 @@
       aria-selected="false" aria-controls="admin-panel-predictions">
       👁 Ver todos
     </button>
+    <button class="admin-tab" role="tab" data-panel="ranking"
+      aria-selected="false" aria-controls="admin-panel-ranking">
+      🏆 Clasificación
+    </button>
     <button class="admin-tab" role="tab" data-panel="users"
       aria-selected="false" aria-controls="admin-panel-users">
       👥 Usuarios
@@ -76,6 +80,13 @@
     <!-- PREDICCIONES USUARIOS -->
     <section id="admin-panel-predictions" class="admin-panel hidden" role="tabpanel">
       <div class="loading"><span class="spinner"></span></div>
+    </section>
+
+    <!-- CLASIFICACION -->
+    <section id="admin-panel-ranking" class="admin-panel hidden" role="tabpanel">
+      <div id="ranking-section">
+        <div class="loading"><span class="spinner"></span></div>
+      </div>
     </section>
 
     <!-- USUARIOS -->
