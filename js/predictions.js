@@ -597,7 +597,7 @@ function buildGroupClassificationSection(groups, allTeams, groupPosPreds, groupP
   let html = `
     <section class="group-classification">
       <div class="group-classification__intro">
-        <p>Predice el orden final de cada grupo. <strong>+0.5 pts</strong> por cada posición acertada. <strong>+1 pt extra</strong> por acertar las 4 posiciones de un grupo.</p>
+        <p>Predice el orden final de cada grupo. <strong>+0.5 pts</strong> por cada posición acertada. <strong>+2 pt extra</strong> por acertar las 4 posiciones de un grupo.</p>
       </div>
       ${dl ? `<div class="deadline-banner ${closed ? 'deadline-banner--closed' : 'deadline-banner--open'}">
         ${closed ? '🔒 Plazo cerrado' : '⏰ Plazo: ' + formatDate(dl.deadline_at)}
